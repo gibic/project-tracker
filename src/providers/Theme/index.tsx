@@ -48,6 +48,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     document.documentElement.setAttribute('data-theme', themeToSet)
+    // localStorage is only readable after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setThemeState(themeToSet)
   }, [])
 

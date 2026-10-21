@@ -35,6 +35,11 @@ export async function seedTestUser(): Promise<void> {
 export async function cleanupTestUser(): Promise<void> {
   const payload = await getPayload({ config })
 
+  // Workspace documents reference their owner; remove them first.
+  for (const collection of ['notes', 'tasks', 'projects'] as const) {
+    await payload.delete({ collection, where: { 'owner.email': { equals: testUser.email } } })
+  }
+
   await payload.delete({
     collection: 'users',
     where: {

@@ -1,31 +1,33 @@
-version: '3'
-
 services:
   payload:
-    image: node:18-alpine
+    image: node:22-alpine
     ports:
       - '3000:3000'
     volumes:
       - .:/home/node/app
       - node_modules:/home/node/app/node_modules
     working_dir: /home/node/app/
-    command: sh -c "yarn install && yarn dev"
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
     depends_on:
-      - mongo
+      - postgres
     env_file:
       - .env
+    environment:
+      # Inside the compose network the database host is the service name, not 127.0.0.1
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-learnpayload}
 
-  mongo:
-    image: mongo:latest
+  postgres:
+    image: postgres:17-alpine
+    restart: always
     ports:
-      - '27017:27017'
-    command:
-      - --storageEngine=wiredTiger
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-learnpayload}
     volumes:
-      - data:/data/db
-    logging:
-      driver: none
+      - pgdata:/var/lib/postgresql/data
 
 volumes:
-  data:
+  pgdata:
   node_modules:
