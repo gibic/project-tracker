@@ -8,6 +8,7 @@ import { Projects } from './infrastructure/payload/collections/Projects'
 import { Tasks } from './infrastructure/payload/collections/Tasks'
 import { Users } from './infrastructure/payload/collections/Users'
 import { defaultLexical } from './infrastructure/payload/editor'
+import { migrations } from './migrations'
 import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
@@ -22,6 +23,7 @@ export default buildConfig({
   },
   editor: defaultLexical,
   db: postgresAdapter({
+    prodMigrations: migrations,
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
