@@ -47,15 +47,19 @@ const parseDueDate = (value: unknown): Date | null => {
   if (value === null || value === undefined || value === '') return null
   const text = String(value)
   const date =
-    value instanceof Date ? value : new Date(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T12:00:00.000Z` : text)
-  if (Number.isNaN(date.getTime())) throw new ValidationError('dueDate is not a valid date', 'dueDate')
+    value instanceof Date
+      ? value
+      : new Date(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T12:00:00.000Z` : text)
+  if (Number.isNaN(date.getTime()))
+    throw new ValidationError('dueDate is not a valid date', 'dueDate')
   return date
 }
 
 export const validateTaskInput = (input: Partial<Record<keyof TaskInput, unknown>>): TaskInput => ({
   title: requireText(input.title, 'title', { max: 200 }),
   description: optionalText(input.description, 'description', 5000),
-  priority: input.priority === undefined ? 'medium' : oneOf(input.priority, TASK_PRIORITIES, 'priority'),
+  priority:
+    input.priority === undefined ? 'medium' : oneOf(input.priority, TASK_PRIORITIES, 'priority'),
   dueDate: parseDueDate(input.dueDate),
 })
 
