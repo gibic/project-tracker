@@ -105,9 +105,9 @@ export function TaskDialog({
               <ul className="flex flex-col gap-1">
                 {notes.map((note) => (
                   <li key={note.id}>
-                    <Link href={`/notes/${note.id}`} className="inline-flex items-center gap-1.5 text-sm hover:underline">
-                      <NotebookPenIcon className="size-3.5 text-muted-foreground" />
-                      {note.title}
+                    <Link href={`/notes/${note.id}`} className="flex items-center gap-1.5 text-sm hover:underline">
+                      <NotebookPenIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 [overflow-wrap:anywhere]">{note.title}</span>
                     </Link>
                   </li>
                 ))}

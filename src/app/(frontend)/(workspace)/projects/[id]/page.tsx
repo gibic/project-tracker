@@ -36,8 +36,8 @@ export default async function ProjectPage({ params }: Props) {
       <PageHeader
         title={
           <span className="flex items-center gap-2">
-            <span className={cn('size-3 rounded-full', projectDotClass[project.color])} />
-            {project.name}
+            <span className={cn('size-3 shrink-0 rounded-full', projectDotClass[project.color])} />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{project.name}</span>
             {readOnly && <Badge variant="outline">Archived</Badge>}
           </span>
         }
@@ -49,7 +49,7 @@ export default async function ProjectPage({ params }: Props) {
         <ProgressBar progress={project.progress} color={project.color} />
       </div>
 
-      <div className="grid gap-8 xl:grid-cols-[1fr_18rem]">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <BoardStoreProvider projectId={project.id} tasks={tasks}>
           <TaskBoard readOnly={readOnly} notesByTask={notesByTask} />
         </BoardStoreProvider>

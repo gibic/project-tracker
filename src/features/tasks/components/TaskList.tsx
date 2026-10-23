@@ -53,7 +53,12 @@ export function TaskList({ readOnly, noteCounts }: { readOnly: boolean; noteCoun
                     onClick={() => openTask(task.id)}
                     className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 text-left"
                   >
-                    <span className={cn('truncate text-sm', task.status === 'done' && 'text-muted-foreground line-through')}>
+                    <span
+                      className={cn(
+                        'min-w-0 max-w-full line-clamp-2 text-sm [overflow-wrap:anywhere]',
+                        task.status === 'done' && 'text-muted-foreground line-through',
+                      )}
+                    >
                       {task.title}
                     </span>
                     <TaskMeta task={task} noteCount={noteCounts[task.id] ?? 0} />

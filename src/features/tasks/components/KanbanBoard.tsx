@@ -13,9 +13,15 @@ import { TASK_STATUS_LABELS } from '../labels'
 import { useTaskMutations } from '../useTaskMutations'
 import { TaskMeta } from './TaskMeta'
 
-export function KanbanBoard({ readOnly, noteCounts }: { readOnly: boolean; noteCounts: Record<ID, number> }) {
+export function KanbanBoard({
+  readOnly,
+  noteCounts,
+}: {
+  readOnly: boolean
+  noteCounts: Record<ID, number>
+}) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {TASK_STATUSES.map((status) => (
         <Column key={status} status={status} readOnly={readOnly} noteCounts={noteCounts} />
       ))}
@@ -42,7 +48,10 @@ function Column({
 
   const column = useMemo(() => visibleColumn(tasks, filter, status), [tasks, filter, status])
   // Neighbours are computed without the dragged card so dropping in place is a no-op position-wise.
-  const others = useMemo(() => column.filter((t) => t.id !== draggingTaskId), [column, draggingTaskId])
+  const others = useMemo(
+    () => column.filter((t) => t.id !== draggingTaskId),
+    [column, draggingTaskId],
+  )
 
   const isTarget = dropTarget?.status === status
 
@@ -81,7 +90,12 @@ function Column({
         if (task.id === draggingTaskId) {
           return (
             <div key={task.id} className="opacity-40">
-              <TaskCard task={task} readOnly={readOnly} noteCount={noteCounts[task.id] ?? 0} onHover={() => {}} />
+              <TaskCard
+                task={task}
+                readOnly={readOnly}
+                noteCount={noteCounts[task.id] ?? 0}
+                onHover={() => {}}
+              />
             </div>
           )
         }
@@ -148,7 +162,7 @@ function TaskCard({
         task.status === 'done' && 'opacity-70',
       )}
     >
-      <span className={cn('text-sm', task.status === 'done' && 'line-through')}>{task.title}</span>
+      <span className={cn('text-sm [overflow-wrap:anywhere]', task.status === 'done' && 'line-through')}>{task.title}</span>
       <TaskMeta task={task} noteCount={noteCount} />
     </button>
   )
