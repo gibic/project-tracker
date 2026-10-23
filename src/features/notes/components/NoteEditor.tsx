@@ -61,7 +61,7 @@ export function NoteEditor({ note, projects, tasks, defaults = {} }: NoteEditorP
     .filter((group) => group.tasks.length > 0)
 
   return (
-    <form action={submit} className="grid gap-8 lg:grid-cols-[1fr_18rem]">
+    <form action={submit} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="note-title">Title</Label>
@@ -117,7 +117,7 @@ export function NoteEditor({ note, projects, tasks, defaults = {} }: NoteEditorP
         </div>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
         <div className="flex flex-col gap-2">
           <Label htmlFor="note-tags">Tags</Label>
           <Input id="note-tags" name="tags" defaultValue={note?.tags.join(', ')} placeholder="research, ideas" />
@@ -133,7 +133,7 @@ export function NoteEditor({ note, projects, tasks, defaults = {} }: NoteEditorP
                 checked={projectIds.includes(project.id)}
                 onCheckedChange={(on) => setProjectIds((ids) => toggle(ids, project.id, on === true))}
               />
-              <span className="truncate">{project.name}</span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{project.name}</span>
             </label>
           ))}
         </fieldset>
@@ -143,14 +143,14 @@ export function NoteEditor({ note, projects, tasks, defaults = {} }: NoteEditorP
           {tasksByProject.length === 0 && <p className="text-xs text-muted-foreground">No open tasks.</p>}
           {tasksByProject.map(({ project, tasks }) => (
             <div key={project.id} className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">{project.name}</span>
+              <span className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{project.name}</span>
               {tasks.map((task) => (
                 <label key={task.id} className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={taskIds.includes(task.id)}
                     onCheckedChange={(on) => setTaskIds((ids) => toggle(ids, task.id, on === true))}
                   />
-                  <span className="truncate">{task.title}</span>
+                  <span className="min-w-0 [overflow-wrap:anywhere]">{task.title}</span>
                 </label>
               ))}
             </div>
