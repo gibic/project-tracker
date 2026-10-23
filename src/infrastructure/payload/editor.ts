@@ -2,6 +2,7 @@ import {
   BlockquoteFeature,
   BoldFeature,
   ChecklistFeature,
+  EXPERIMENTAL_TableFeature,
   FixedToolbarFeature,
   HeadingFeature,
   HorizontalRuleFeature,
@@ -34,6 +35,7 @@ export const noteEditorFeatures = [
   ChecklistFeature(),
   BlockquoteFeature(),
   HorizontalRuleFeature(),
+  EXPERIMENTAL_TableFeature(),
   FixedToolbarFeature(),
   InlineToolbarFeature(),
 ]
