@@ -3,11 +3,12 @@
 import { FolderKanbanIcon, LayoutDashboardIcon, LogOutIcon, MenuIcon, NotebookPenIcon, SettingsIcon, XIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect } from 'react'
+import { Suspense, use, useEffect } from 'react'
 
 import type { Project } from '@/domain/projects/project'
 
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { ThemeSelector } from '@/providers/Theme/ThemeSelector'
 import { cn } from '@/utilities/ui'
 import { logoutAction } from '../auth/actions'
@@ -20,10 +21,42 @@ const NAV = [
   { href: '/projects', label: 'Projects', icon: FolderKanbanIcon },
 ]
 
+type SidebarProject = Pick<Project, 'id' | 'name' | 'color'>
+
 const isActive = (pathname: string, href: string) =>
   href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)
 
-export function Sidebar({ projects, userLabel }: { projects: Pick<Project, 'id' | 'name' | 'color'>[]; userLabel: string }) {
+const linkClass = (active: boolean) =>
+  cn(
+    'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+    active ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground' : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+  )
+
+function ProjectLinks({ projects, pathname }: { projects: Promise<SidebarProject[]>; pathname: string }) {
+  const list = use(projects)
+  if (list.length === 0) return <p className="px-2 py-1 text-sm text-muted-foreground">None yet.</p>
+  return list.map((project) => (
+    <Link key={project.id} href={`/projects/${project.id}`} className={linkClass(pathname === `/projects/${project.id}`)}>
+      <span className={cn('size-2 shrink-0 rounded-full', projectDotClass[project.color])} />
+      <span className="truncate">{project.name}</span>
+    </Link>
+  ))
+}
+
+function ProjectLinksSkeleton() {
+  return (
+    <div className="flex flex-col gap-0.5" aria-hidden>
+      {['w-32', 'w-24', 'w-28'].map((width) => (
+        <div key={width} className="flex items-center gap-2 px-2 py-1.5">
+          <Skeleton className="size-2 rounded-full" />
+          <Skeleton className={cn('h-4', width)} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function Sidebar({ projects, userLabel }: { projects: Promise<SidebarProject[]>; userLabel: string }) {
   const pathname = usePathname()
   const navOpen = useUIStore((s) => s.navOpen)
   const setNavOpen = useUIStore((s) => s.setNavOpen)
@@ -34,12 +67,6 @@ export function Sidebar({ projects, userLabel }: { projects: Pick<Project, 'id' 
   }, [])
 
   useEffect(() => setNavOpen(false), [pathname, setNavOpen])
-
-  const linkClass = (active: boolean) =>
-    cn(
-      'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-      active ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground' : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-    )
 
   return (
     <>
@@ -80,16 +107,9 @@ export function Sidebar({ projects, userLabel }: { projects: Pick<Project, 'id' 
 
         <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-2">
           <p className="px-2 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Active projects</p>
-          {projects.length === 0 ? (
-            <p className="px-2 py-1 text-sm text-muted-foreground">None yet.</p>
-          ) : (
-            projects.map((project) => (
-              <Link key={project.id} href={`/projects/${project.id}`} className={linkClass(pathname === `/projects/${project.id}`)}>
-                <span className={cn('size-2 shrink-0 rounded-full', projectDotClass[project.color])} />
-                <span className="truncate">{project.name}</span>
-              </Link>
-            ))
-          )}
+          <Suspense fallback={<ProjectLinksSkeleton />}>
+            <ProjectLinks projects={projects} pathname={pathname} />
+          </Suspense>
         </div>
 
         <div className="border-t p-2">

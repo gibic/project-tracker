@@ -8,14 +8,14 @@ export const dynamic = 'force-dynamic'
 
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser()
-  const projects = await listProjects(await getAppContext())
+  // Not awaited: the sidebar streams its project list so the page shell renders immediately.
+  const projects = getAppContext()
+    .then((ctx) => listProjects(ctx))
+    .then((list) => list.map(({ id, name, color }) => ({ id, name, color })))
 
   return (
     <div className="md:flex">
-      <Sidebar
-        projects={projects.map(({ id, name, color }) => ({ id, name, color }))}
-        userLabel={user.name || user.email}
-      />
+      <Sidebar projects={projects} userLabel={user.name || user.email} />
       <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
     </div>
   )
