@@ -1,5 +1,5 @@
-import type { NoteRepository, ProjectRepository, TaskRepository } from './ports/repositories'
-import type { Clock, RichTextRenderer } from './ports/services'
+import type { NoteRepository, OAuthRepository, ProjectRepository, TaskRepository } from './ports/repositories'
+import type { Clock, OAuthCrypto, RichTextRenderer } from './ports/services'
 
 /**
  * Everything a use case may touch. Built per request by the composition root
@@ -10,5 +10,12 @@ export interface AppContext {
   tasks: TaskRepository
   notes: NoteRepository
   richText: RichTextRenderer
+  clock: Clock
+}
+
+/** Context for OAuth use cases. Not user-scoped: tokens are resolved to a user here. */
+export interface OAuthContext {
+  oauth: OAuthRepository
+  crypto: OAuthCrypto
   clock: Clock
 }

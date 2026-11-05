@@ -71,6 +71,8 @@ export interface Config {
     tasks: Task;
     notes: Note;
     users: User;
+    'oauth-clients': OauthClient;
+    'oauth-grants': OauthGrant;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +88,8 @@ export interface Config {
     tasks: TasksSelect<false> | TasksSelect<true>;
     notes: NotesSelect<false> | NotesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'oauth-clients': OauthClientsSelect<false> | OauthClientsSelect<true>;
+    'oauth-grants': OauthGrantsSelect<false> | OauthGrantsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -231,6 +235,51 @@ export interface Note {
   createdAt: string;
 }
 /**
+ * Apps registered through OAuth. Deleting one disconnects every user of that app.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oauth-clients".
+ */
+export interface OauthClient {
+  id: number;
+  name: string;
+  clientId: string;
+  redirectUris:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  tokenEndpointAuthMethod: 'none' | 'client_secret_post' | 'client_secret_basic';
+  secretHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Apps you connected over OAuth. Delete an entry to revoke its access.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oauth-grants".
+ */
+export interface OauthGrant {
+  id: number;
+  client: number | OauthClient;
+  redirectUri: string;
+  codeChallenge: string;
+  codeHash?: string | null;
+  codeExpiresAt?: string | null;
+  accessTokenHash?: string | null;
+  accessTokenExpiresAt?: string | null;
+  refreshTokenHash?: string | null;
+  refreshTokenExpiresAt?: string | null;
+  owner: number | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -269,6 +318,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'oauth-clients';
+        value: number | OauthClient;
+      } | null)
+    | ({
+        relationTo: 'oauth-grants';
+        value: number | OauthGrant;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -386,6 +443,37 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oauth-clients_select".
+ */
+export interface OauthClientsSelect<T extends boolean = true> {
+  name?: T;
+  clientId?: T;
+  redirectUris?: T;
+  tokenEndpointAuthMethod?: T;
+  secretHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oauth-grants_select".
+ */
+export interface OauthGrantsSelect<T extends boolean = true> {
+  client?: T;
+  redirectUri?: T;
+  codeChallenge?: T;
+  codeHash?: T;
+  codeExpiresAt?: T;
+  accessTokenHash?: T;
+  accessTokenExpiresAt?: T;
+  refreshTokenHash?: T;
+  refreshTokenExpiresAt?: T;
+  owner?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -27,6 +27,20 @@ export const getApiKeyUser = async (apiKey: string): Promise<User | null> => {
   return user ?? null
 }
 
+/** Loads a user by id with system privileges, for tokens already verified by the caller. */
+export const getUserById = async (id: string): Promise<User | null> => {
+  const payload = await getPayloadClient()
+  const { docs } = await payload.find({
+    collection: 'users',
+    where: { id: { equals: Number(id) } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  // Same shape as `payload.auth()` users, which carry their collection slug.
+  return docs[0] ? { ...docs[0], collection: 'users' } : null
+}
+
 /** Verifies credentials and sets the auth cookie. Throws on bad credentials. */
 export const signIn = async (email: string, password: string): Promise<void> => {
   await login({ collection: 'users', config, email, password })

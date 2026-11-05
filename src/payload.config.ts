@@ -4,6 +4,8 @@ import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Notes } from './infrastructure/payload/collections/Notes'
+import { OAuthClients } from './infrastructure/payload/collections/OAuthClients'
+import { OAuthGrants } from './infrastructure/payload/collections/OAuthGrants'
 import { Projects } from './infrastructure/payload/collections/Projects'
 import { Tasks } from './infrastructure/payload/collections/Tasks'
 import { Users } from './infrastructure/payload/collections/Users'
@@ -28,7 +30,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL || '',
     },
   }),
-  collections: [Projects, Tasks, Notes, Users],
+  collections: [Projects, Tasks, Notes, Users, OAuthClients, OAuthGrants],
   cors: [getServerSideURL()].filter(Boolean),
   secret: process.env.PAYLOAD_SECRET,
   typescript: {

@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { loginAction, type LoginState } from './actions'
 
-export function LoginForm() {
+/** `next` is where to go after signing in (validated server-side to a same-origin path). */
+export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(loginAction, {})
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {next && <input type="hidden" name="next" value={next} />}
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" autoComplete="email" defaultValue={state.email} required />

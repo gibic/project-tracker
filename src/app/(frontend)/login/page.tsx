@@ -4,14 +4,16 @@ import { redirect } from 'next/navigation'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoginForm } from '@/features/auth/LoginForm'
+import { safeNextPath } from '@/features/oauth/params'
 import { getSessionUser, hasAnyUser } from '@/infrastructure/auth/session'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = { title: 'Sign in' }
 
-export default async function LoginPage() {
-  if (await getSessionUser()) redirect('/')
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
+  const next = safeNextPath((await searchParams).next)
+  if (await getSessionUser()) redirect(next)
   const firstRun = !(await hasAnyUser())
 
   return (
@@ -31,7 +33,7 @@ export default async function LoginPage() {
               , then come back here.
             </p>
           ) : (
-            <LoginForm />
+            <LoginForm next={next === '/' ? undefined : next} />
           )}
         </CardContent>
       </Card>

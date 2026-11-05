@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 
 import { signIn, signOut } from '@/infrastructure/auth/session'
+import { safeNextPath } from '../oauth/params'
 
 export interface LoginState {
   error?: string
@@ -19,7 +20,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   } catch {
     return { error: 'Email or password is incorrect.', email }
   }
-  redirect('/')
+  redirect(safeNextPath(formData.get('next')))
 }
 
 export async function logoutAction(): Promise<void> {

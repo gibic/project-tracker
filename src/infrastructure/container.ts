@@ -1,10 +1,12 @@
 import type { Payload } from 'payload'
 
-import type { AppContext } from '@/application/context'
+import type { AppContext, OAuthContext } from '@/application/context'
 import type { User } from '@/payload-types'
 
 import { systemClock } from '@/application/ports/services'
+import { nodeOAuthCrypto } from './oauth/crypto'
 import { createPayloadNoteRepository } from './payload/repositories/PayloadNoteRepository'
+import { createPayloadOAuthRepository } from './payload/repositories/PayloadOAuthRepository'
 import { createPayloadProjectRepository } from './payload/repositories/PayloadProjectRepository'
 import { createPayloadTaskRepository } from './payload/repositories/PayloadTaskRepository'
 import { createRichTextRenderer } from './payload/richText'
@@ -23,3 +25,10 @@ export const createAppContext = (payload: Payload, user: User): AppContext => {
     clock: systemClock,
   }
 }
+
+/** OAuth use cases run before a user is known, so this context is not user-scoped. */
+export const createOAuthContext = (payload: Payload): OAuthContext => ({
+  oauth: createPayloadOAuthRepository(payload),
+  crypto: nodeOAuthCrypto,
+  clock: systemClock,
+})

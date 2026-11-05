@@ -1,4 +1,5 @@
 import type { Note, NoteSummary } from '@/domain/notes/note'
+import type { OAuthClient, OAuthGrant } from '@/domain/oauth/oauth'
 import type { Project, ProjectColor, ProjectStatus } from '@/domain/projects/project'
 import type { ID } from '@/domain/shared/types'
 import type { Task, TaskPriority, TaskStatus } from '@/domain/tasks/task'
@@ -86,4 +87,20 @@ export interface NoteRepository {
   /** Removes a project or task id from every note that references it. */
   unlinkProject(projectId: ID): Promise<void>
   unlinkTasks(taskIds: ID[]): Promise<void>
+}
+
+export type NewOAuthClient = Omit<OAuthClient, 'id' | 'createdAt'>
+export type NewOAuthGrant = Omit<OAuthGrant, 'id'>
+
+/**
+ * OAuth persistence. Unlike the ports above it is not user-scoped: the token endpoint
+ * runs before any user is known, so implementations act with system privileges.
+ */
+export interface OAuthRepository {
+  createClient(data: NewOAuthClient): Promise<OAuthClient>
+  findClient(clientId: string): Promise<OAuthClient | null>
+  createGrant(data: NewOAuthGrant): Promise<OAuthGrant>
+  findGrant(by: { codeHash: string } | { accessTokenHash: string } | { refreshTokenHash: string }): Promise<OAuthGrant | null>
+  updateGrant(id: ID, patch: Partial<NewOAuthGrant>): Promise<OAuthGrant>
+  deleteGrant(id: ID): Promise<void>
 }

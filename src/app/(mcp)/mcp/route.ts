@@ -1,24 +1,31 @@
 import { createMcpHandler } from '@modelcontextprotocol/server'
 
 import { createMcpServer } from '@/features/mcp/server'
-import { getApiKeyUser, getPayloadClient } from '@/infrastructure/auth/session'
+import { getBearerUser } from '@/features/oauth/bearer'
+import { protectedResourceMetadataUrl, publicOrigin, readBearerToken } from '@/features/oauth/http'
+import { getPayloadClient } from '@/infrastructure/auth/session'
 import { createAppContext } from '@/infrastructure/container'
 
 /*
- * Streamable HTTP MCP endpoint (stateless). Clients authenticate with a Payload user
- * API key sent as `Authorization: Bearer <key>`; every tool call is scoped to that user.
+ * Streamable HTTP MCP endpoint (stateless). Accepts `Authorization: Bearer <token>` where the
+ * token is an OAuth access token (claude.ai, ChatGPT) or a Payload user API key (Claude Code,
+ * scripts). Every tool call is scoped to that user.
  */
 
-const unauthorized = () =>
-  Response.json(
-    { error: 'Missing or invalid API key. Send Authorization: Bearer <key>.' },
-    { status: 401, headers: { 'WWW-Authenticate': 'Bearer realm="project-tracker"' } },
+/** RFC 9728 challenge: points clients at the metadata that starts the OAuth flow. */
+const unauthorized = (request: Request, invalidToken: boolean) => {
+  const metadata = protectedResourceMetadataUrl(publicOrigin(request))
+  const challenge = `Bearer resource_metadata="${metadata}"${invalidToken ? ', error="invalid_token"' : ''}`
+  return Response.json(
+    { error: invalidToken ? 'invalid_token' : 'unauthorized', error_description: 'Sign in with OAuth or send an API key.' },
+    { status: 401, headers: { 'WWW-Authenticate': challenge } },
   )
+}
 
 const handle = async (request: Request): Promise<Response> => {
-  const match = /^Bearer\s+(.+)$/i.exec(request.headers.get('authorization') ?? '')
-  const user = match ? await getApiKeyUser(match[1].trim()) : null
-  if (!user) return unauthorized()
+  const token = readBearerToken(request)
+  const user = token ? await getBearerUser(token) : null
+  if (!user) return unauthorized(request, Boolean(token))
 
   const ctx = createAppContext(await getPayloadClient(), user)
   const handler = createMcpHandler(() => createMcpServer(ctx), {
