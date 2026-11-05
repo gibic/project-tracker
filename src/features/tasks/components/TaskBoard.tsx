@@ -1,6 +1,6 @@
 'use client'
 
-import { KanbanIcon, ListIcon, XIcon } from 'lucide-react'
+import { KanbanIcon, ListIcon, SearchIcon, XIcon } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { NoteSummary } from '@/domain/notes/note'
@@ -38,19 +38,22 @@ export function TaskBoard({ readOnly, notesByTask }: { readOnly: boolean; notesB
       {!readOnly && <QuickAddTask />}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          type="search"
-          placeholder="Filter tasks…"
-          aria-label="Filter tasks"
-          value={filter.query}
-          onChange={(e) => setFilter({ query: e.target.value })}
-          className="w-56"
-        />
+        <div className="relative w-56">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Filter tasks…"
+            aria-label="Filter tasks"
+            value={filter.query}
+            onChange={(e) => setFilter({ query: e.target.value })}
+            className="h-8 pl-8 shadow-none md:text-xs"
+          />
+        </div>
         <NativeSelect
           aria-label="Filter by priority"
           value={filter.priority}
           onChange={(e) => setFilter({ priority: e.target.value as TaskPriority | 'all' })}
-          className="w-36"
+          className="h-8 w-36 shadow-none md:text-xs"
         >
           <option value="all">All priorities</option>
           {TASK_PRIORITIES.map((p) => (

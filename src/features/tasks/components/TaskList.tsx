@@ -55,8 +55,8 @@ export function TaskList({ readOnly, noteCounts }: { readOnly: boolean; noteCoun
                   >
                     <span
                       className={cn(
-                        'min-w-0 max-w-full line-clamp-2 text-sm [overflow-wrap:anywhere]',
-                        task.status === 'done' && 'text-muted-foreground line-through',
+                        'min-w-0 max-w-full line-clamp-2 text-sm font-medium [overflow-wrap:anywhere]',
+                        task.status === 'done' && 'font-normal text-muted-foreground line-through',
                       )}
                     >
                       {task.title}

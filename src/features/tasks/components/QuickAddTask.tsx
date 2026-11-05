@@ -25,8 +25,11 @@ export function QuickAddTask() {
   }
 
   return (
-    <form ref={formRef} action={submit} className="flex flex-wrap gap-2">
-      <Input name="title" placeholder="Add a task…" aria-label="Task title" required maxLength={200} className="min-w-48 flex-1" />
+    <form ref={formRef} action={submit} aria-label="Add task" className="flex flex-wrap gap-2 rounded-lg border bg-card p-2 shadow-xs">
+      <div className="relative min-w-48 flex-1">
+        <PlusIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input name="title" placeholder="Add a task…" aria-label="Task title" required maxLength={200} className="bg-background pl-9" />
+      </div>
       <NativeSelect name="priority" aria-label="Priority" defaultValue="medium" className="w-32">
         {TASK_PRIORITIES.map((p) => (
           <option key={p} value={p}>

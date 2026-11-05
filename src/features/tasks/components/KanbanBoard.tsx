@@ -162,7 +162,7 @@ function TaskCard({
         task.status === 'done' && 'opacity-70',
       )}
     >
-      <span className={cn('text-sm [overflow-wrap:anywhere]', task.status === 'done' && 'line-through')}>{task.title}</span>
+      <span className={cn('text-sm font-medium [overflow-wrap:anywhere]', task.status === 'done' && 'font-normal line-through')}>{task.title}</span>
       <TaskMeta task={task} noteCount={noteCount} />
     </button>
   )

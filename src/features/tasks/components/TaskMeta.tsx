@@ -4,17 +4,16 @@ import { CalendarIcon, NotebookPenIcon } from 'lucide-react'
 
 import type { Task } from '@/domain/tasks/task'
 
-import { Badge } from '@/components/ui/badge'
 import { isOverdue } from '@/domain/tasks/task'
 import { cn } from '@/utilities/ui'
 import { formatDueDate } from '../../shared/format'
-import { PRIORITY_LABELS, priorityBadgeVariant } from '../labels'
+import { PriorityBadge } from './PriorityBadge'
 
 export function TaskMeta({ task, noteCount = 0 }: { task: Task; noteCount?: number }) {
   const overdue = isOverdue(task, new Date())
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <Badge variant={priorityBadgeVariant[task.priority]}>{PRIORITY_LABELS[task.priority]}</Badge>
+      <PriorityBadge priority={task.priority} />
       {task.dueDate && (
         <span
           className={cn(

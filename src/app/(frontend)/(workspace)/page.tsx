@@ -11,31 +11,63 @@ import { ProgressBar } from '@/features/projects/ProgressBar'
 import { formatDueDate } from '@/features/shared/format'
 import { PageHeader } from '@/features/shared/PageHeader'
 import { getAppContext } from '@/features/shared/server'
-import { PRIORITY_LABELS } from '@/features/tasks/labels'
+import { PriorityBadge } from '@/features/tasks/components/PriorityBadge'
 import { cn } from '@/utilities/ui'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, tone }: { label: string; value: number; tone?: 'danger' }) {
+  const alert = tone === 'danger' && value > 0
   return (
-    <Card className="p-5">
+    <Card className={cn('p-5', alert && 'border-error bg-error/10')}>
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-semibold tabular-nums">{value}</p>
+      <p className={cn('mt-1 text-3xl font-semibold tabular-nums', alert && 'text-destructive-foreground')}>{value}</p>
     </Card>
   )
 }
 
-function TaskRows({ tasks, empty, tone }: { tasks: DashboardTask[]; empty: string; tone?: 'danger' }) {
-  if (tasks.length === 0) return <p className="text-sm text-muted-foreground">{empty}</p>
+/** Task card with a count in the title; shrinks to one line when empty instead of stretching to the row height. */
+function TaskSection({
+  title,
+  tasks,
+  empty,
+  tone,
+}: {
+  title: string
+  tasks: DashboardTask[]
+  empty: string
+  tone?: 'danger'
+}) {
+  const alert = tone === 'danger' && tasks.length > 0
+  return (
+    <Card className={cn(tasks.length === 0 && 'self-start', alert && 'border-error')}>
+      <CardHeader className={cn(tasks.length === 0 && 'pb-5')}>
+        <CardTitle className="flex items-baseline justify-between gap-2 text-base">
+          <span className={cn(alert && 'text-destructive-foreground')}>{title}</span>
+          <span className="text-sm font-normal tabular-nums text-muted-foreground">{tasks.length}</span>
+        </CardTitle>
+        {tasks.length === 0 && <p className="text-sm text-muted-foreground">{empty}</p>}
+      </CardHeader>
+      {tasks.length > 0 && (
+        <CardContent>
+          <TaskRows tasks={tasks} tone={tone} />
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
+function TaskRows({ tasks, tone }: { tasks: DashboardTask[]; tone?: 'danger' }) {
   return (
     <ul className="flex flex-col divide-y">
       {tasks.map((task) => (
         <li key={task.id}>
           <Link href={`/projects/${task.projectId}`} className="flex items-baseline justify-between gap-3 py-2 hover:underline">
             <span className="min-w-0">
-              <span className="block truncate text-sm">{task.title}</span>
-              <span className="text-xs text-muted-foreground">
-                {task.projectName} · {PRIORITY_LABELS[task.priority]}
+              <span className="block truncate text-sm font-medium">{task.title}</span>
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="truncate">{task.projectName}</span>
+                <PriorityBadge priority={task.priority} />
               </span>
             </span>
             {task.dueDate && (
@@ -58,36 +90,15 @@ export default async function DashboardPage() {
       <PageHeader title="Dashboard" />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Stat label="Overdue" value={overdue.length} tone="danger" />
         <Stat label="Open tasks" value={totals.openTasks} />
         <Stat label="Done this week" value={totals.doneThisWeek} />
-        <Stat label="Notes" value={totals.notes} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Overdue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TaskRows tasks={overdue} empty="Nothing overdue." tone="danger" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Due in the next 7 days</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TaskRows tasks={dueSoon} empty="Nothing due soon." />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">In progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TaskRows tasks={inProgress} empty="Nothing in progress." />
-          </CardContent>
-        </Card>
+        <TaskSection title="Overdue" tasks={overdue} empty="Nothing overdue." tone="danger" />
+        <TaskSection title="Due in the next 7 days" tasks={dueSoon} empty="Nothing due soon." />
+        <TaskSection title="In progress" tasks={inProgress} empty="Nothing in progress." />
 
         <Card className="lg:col-span-2">
           <CardHeader>
