@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { PlusIcon, SearchIcon } from 'lucide-react'
+import { PlusIcon, SearchIcon, XIcon } from 'lucide-react'
 import Link from 'next/link'
 
 import { listNotes, listTags } from '@/application/notes/useCases'
@@ -15,18 +15,33 @@ export const metadata: Metadata = { title: 'Notes' }
 
 type Props = { searchParams: Promise<{ q?: string; tag?: string }> }
 
+function FilterChip({ href, label, clearLabel }: { href: string; label: string; clearLabel: string }) {
+  return (
+    <Link
+      href={href}
+      aria-label={clearLabel}
+      className="inline-flex max-w-full items-center gap-1 rounded-md border bg-secondary px-2 py-0.5 text-xs font-medium hover:bg-accent"
+    >
+      <span className="truncate">{label}</span>
+      <XIcon className="size-3 shrink-0 text-muted-foreground" />
+    </Link>
+  )
+}
+
 export default async function NotesPage({ searchParams }: Props) {
   const { q = '', tag = '' } = await searchParams
   const ctx = await getAppContext()
   const [notes, tags] = await Promise.all([listNotes(ctx, { search: q, tag }), listTags(ctx)])
 
-  const tagHref = (value: string) => {
+  const notesHref = (filters: { q?: string; tag?: string }) => {
     const params = new URLSearchParams()
-    if (q) params.set('q', q)
-    if (value && value !== tag) params.set('tag', value)
+    if (filters.q) params.set('q', filters.q)
+    if (filters.tag) params.set('tag', filters.tag)
     const query = params.toString()
     return query ? `/notes?${query}` : '/notes'
   }
+  // Clicking the selected tag again clears it.
+  const tagHref = (value: string) => notesHref({ q, tag: value === tag ? '' : value })
 
   return (
     <>
@@ -50,6 +65,17 @@ export default async function NotesPage({ searchParams }: Props) {
           <SearchIcon />
         </Button>
       </form>
+
+      {(q || tag) && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Filtered by</span>
+          {q && <FilterChip href={notesHref({ tag })} label={`“${q}”`} clearLabel={`Clear search “${q}”`} />}
+          {tag && <FilterChip href={notesHref({ q })} label={`#${tag}`} clearLabel={`Clear tag #${tag}`} />}
+          <Link href="/notes" className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            Clear all
+          </Link>
+        </div>
+      )}
 
       {tags.length > 0 && (
         <div className="mb-6 flex flex-wrap gap-1.5">

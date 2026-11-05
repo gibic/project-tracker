@@ -13,6 +13,7 @@ import { ThemeSelector } from '@/providers/Theme/ThemeSelector'
 import { cn } from '@/utilities/ui'
 import { logoutAction } from '../auth/actions'
 import { projectDotClass } from '../projects/colors'
+import { MetaLabel } from '../shared/headings'
 import { useUIStore } from './uiStore'
 
 const NAV = [
@@ -119,7 +120,7 @@ export function Sidebar({ projects, userLabel }: { projects: Promise<SidebarProj
         </nav>
 
         <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-2">
-          <p className="px-2 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Active projects</p>
+          <MetaLabel as="h2" className="px-2 pb-1">Active projects</MetaLabel>
           <Suspense fallback={<ProjectLinksSkeleton />}>
             <ProjectLinks projects={projects} pathname={pathname} />
           </Suspense>

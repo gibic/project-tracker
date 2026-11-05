@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { DeleteNoteButton } from '@/features/notes/components/DeleteNoteButton'
 import { NoteHtml } from '@/features/notes/components/NoteHtml'
 import { formatRelative } from '@/features/shared/format'
+import { MetaLabel } from '@/features/shared/headings'
 import { PageHeader } from '@/features/shared/PageHeader'
 import { loadOrNotFound } from '@/features/shared/server'
 
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</h2>
+      <MetaLabel>{title}</MetaLabel>
       {children}
     </section>
   )

@@ -4,11 +4,12 @@ import Link from 'next/link'
 import type { DashboardTask } from '@/application/dashboard/getDashboard'
 
 import { getDashboard } from '@/application/dashboard/getDashboard'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { NoteListItem } from '@/features/notes/components/NoteListItem'
 import { projectDotClass } from '@/features/projects/colors'
 import { ProgressBar } from '@/features/projects/ProgressBar'
 import { formatDueDate } from '@/features/shared/format'
+import { SectionHeading } from '@/features/shared/headings'
 import { PageHeader } from '@/features/shared/PageHeader'
 import { getAppContext } from '@/features/shared/server'
 import { PriorityBadge } from '@/features/tasks/components/PriorityBadge'
@@ -42,10 +43,10 @@ function TaskSection({
   return (
     <Card className={cn(tasks.length === 0 && 'self-start', alert && 'border-error')}>
       <CardHeader className={cn(tasks.length === 0 && 'pb-5')}>
-        <CardTitle className="flex items-baseline justify-between gap-2 text-base">
+        <SectionHeading className="flex items-baseline justify-between gap-2">
           <span className={cn(alert && 'text-destructive-foreground')}>{title}</span>
           <span className="text-sm font-normal tabular-nums text-muted-foreground">{tasks.length}</span>
-        </CardTitle>
+        </SectionHeading>
         {tasks.length === 0 && <p className="text-sm text-muted-foreground">{empty}</p>}
       </CardHeader>
       {tasks.length > 0 && (
@@ -102,7 +103,7 @@ export default async function DashboardPage() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Projects</CardTitle>
+            <SectionHeading>Projects</SectionHeading>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {projects.length === 0 ? (
@@ -125,7 +126,7 @@ export default async function DashboardPage() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-base">Recent notes</CardTitle>
+            <SectionHeading>Recent notes</SectionHeading>
           </CardHeader>
           {recentNotes.length === 0 ? (
             <CardContent>

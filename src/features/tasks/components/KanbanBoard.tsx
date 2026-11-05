@@ -7,6 +7,7 @@ import type { Task, TaskStatus } from '@/domain/tasks/task'
 
 import { TASK_STATUSES } from '@/domain/tasks/task'
 import { cn } from '@/utilities/ui'
+import { SectionHeading } from '../../shared/headings'
 import { useBoardStore } from '../BoardStoreProvider'
 import { visibleColumn } from '../boardStore'
 import { TASK_STATUS_LABELS } from '../labels'
@@ -81,7 +82,7 @@ function Column({
       )}
     >
       <header className="flex items-center justify-between px-1 pb-1">
-        <h2 className="text-sm font-medium">{TASK_STATUS_LABELS[status]}</h2>
+        <SectionHeading>{TASK_STATUS_LABELS[status]}</SectionHeading>
         <span className="text-xs tabular-nums text-muted-foreground">{column.length}</span>
       </header>
 

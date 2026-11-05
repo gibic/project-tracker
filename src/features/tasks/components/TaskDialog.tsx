@@ -14,6 +14,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/domain/tasks/task'
 import { toDateInputValue } from '../../shared/format'
+import { SectionHeading } from '../../shared/headings'
 import { useBoardStore } from '../BoardStoreProvider'
 import { PRIORITY_LABELS, TASK_STATUS_LABELS } from '../labels'
 import { useTaskMutations } from '../useTaskMutations'
@@ -91,7 +92,7 @@ export function TaskDialog({
 
           <div className="flex flex-col gap-2 rounded-md border p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Linked notes</span>
+              <SectionHeading as="h3">Linked notes</SectionHeading>
               <Link
                 href={`/notes/new?projectId=${projectId}&taskId=${task.id}`}
                 className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"

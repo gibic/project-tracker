@@ -10,6 +10,7 @@ import { projectDotClass } from '@/features/projects/colors'
 import { ProgressBar } from '@/features/projects/ProgressBar'
 import { ProjectActions } from '@/features/projects/ProjectActions'
 import { PageHeader } from '@/features/shared/PageHeader'
+import { SectionHeading } from '@/features/shared/headings'
 import { loadOrNotFound } from '@/features/shared/server'
 import { BoardStoreProvider } from '@/features/tasks/BoardStoreProvider'
 import { TaskBoard } from '@/features/tasks/components/TaskBoard'
@@ -59,7 +60,7 @@ export default async function ProjectPage({ params }: Props) {
 
         <aside className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Project notes</h2>
+            <SectionHeading>Project notes</SectionHeading>
             <Button asChild size="sm" variant="ghost">
               <Link href={`/notes/new?projectId=${project.id}`}>
                 <PlusIcon />

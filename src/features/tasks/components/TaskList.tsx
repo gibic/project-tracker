@@ -7,6 +7,7 @@ import type { ID } from '@/domain/shared/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { TASK_STATUSES, compareByUrgency } from '@/domain/tasks/task'
 import { cn } from '@/utilities/ui'
+import { SectionHeading } from '../../shared/headings'
 import { useBoardStore } from '../BoardStoreProvider'
 import { visibleColumn } from '../boardStore'
 import { TASK_STATUS_LABELS } from '../labels'
@@ -33,9 +34,9 @@ export function TaskList({ readOnly, noteCounts }: { readOnly: boolean; noteCoun
     <div className="flex flex-col gap-6">
       {groups.map(({ status, tasks }) => (
         <section key={status}>
-          <h2 className="mb-2 text-sm font-medium">
-            {TASK_STATUS_LABELS[status]} <span className="text-muted-foreground">({tasks.length})</span>
-          </h2>
+          <SectionHeading className="mb-2">
+            {TASK_STATUS_LABELS[status]} <span className="font-normal text-muted-foreground">({tasks.length})</span>
+          </SectionHeading>
           {tasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nothing here.</p>
           ) : (
