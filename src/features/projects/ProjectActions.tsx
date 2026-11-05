@@ -31,7 +31,7 @@ export function ProjectActions({ project }: { project: Project }) {
         </Button>
       )}
       <Button
-        variant="outline"
+        variant={archived ? 'outline' : 'ghost'}
         size="sm"
         disabled={pending}
         onClick={() => run(() => setProjectArchivedAction(project.id, !archived))}
@@ -40,8 +40,9 @@ export function ProjectActions({ project }: { project: Project }) {
         {archived ? 'Restore' : 'Archive'}
       </Button>
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
+        className="text-destructive-foreground hover:text-destructive-foreground"
         disabled={pending}
         onClick={() => {
           if (confirm(`Delete "${project.name}" and all its tasks? Linked notes are kept.`)) {

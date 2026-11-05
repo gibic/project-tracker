@@ -68,24 +68,20 @@ export default async function NotePage({ params }: Props) {
         </article>
 
         <aside className="flex flex-col gap-6">
-          <Section title="Projects">
-            {projects.length === 0 ? (
-              <Empty>None</Empty>
-            ) : (
-              projects.map((project) => (
+          {projects.length > 0 && (
+            <Section title="Projects">
+              {projects.map((project) => (
                 <Link key={project.id} href={`/projects/${project.id}`} className="flex items-center gap-2 text-sm hover:underline">
                   <FolderKanbanIcon className="size-4 text-muted-foreground" />
                   {project.name}
                 </Link>
-              ))
-            )}
-          </Section>
+              ))}
+            </Section>
+          )}
 
-          <Section title="Tasks">
-            {tasks.length === 0 ? (
-              <Empty>None</Empty>
-            ) : (
-              tasks.map((task) => (
+          {tasks.length > 0 && (
+            <Section title="Tasks">
+              {tasks.map((task) => (
                 <Link key={task.id} href={`/projects/${task.projectId}`} className="flex items-center gap-2 text-sm hover:underline">
                   {task.status === 'done' ? (
                     <CheckCircle2Icon className="size-4 text-muted-foreground" />
@@ -94,9 +90,9 @@ export default async function NotePage({ params }: Props) {
                   )}
                   <span className={task.status === 'done' ? 'line-through' : undefined}>{task.title}</span>
                 </Link>
-              ))
-            )}
-          </Section>
+              ))}
+            </Section>
+          )}
 
           <Section title="Links">
             {wikiLinks.length === 0 ? (

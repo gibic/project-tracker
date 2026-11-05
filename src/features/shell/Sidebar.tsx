@@ -26,17 +26,30 @@ type SidebarProject = Pick<Project, 'id' | 'name' | 'color'>
 const isActive = (pathname: string, href: string) =>
   href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)
 
-const linkClass = (active: boolean) =>
+/**
+ * A project page highlights its own entry in the project list, so the Projects nav item
+ * only gets the lighter "ancestor" state there (one highlighted item at a time).
+ */
+const navState = (pathname: string, href: string): 'active' | 'ancestor' | 'none' => {
+  if (!isActive(pathname, href)) return 'none'
+  return href === '/projects' && pathname !== href ? 'ancestor' : 'active'
+}
+
+const linkClass = (state: 'active' | 'ancestor' | 'none') =>
   cn(
     'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-    active ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground' : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+    state === 'active'
+      ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+      : state === 'ancestor'
+        ? 'font-medium text-sidebar-foreground hover:bg-sidebar-accent'
+        : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
   )
 
 function ProjectLinks({ projects, pathname }: { projects: Promise<SidebarProject[]>; pathname: string }) {
   const list = use(projects)
   if (list.length === 0) return <p className="px-2 py-1 text-sm text-muted-foreground">None yet.</p>
   return list.map((project) => (
-    <Link key={project.id} href={`/projects/${project.id}`} className={linkClass(pathname === `/projects/${project.id}`)}>
+    <Link key={project.id} href={`/projects/${project.id}`} className={linkClass(pathname === `/projects/${project.id}` ? 'active' : 'none')}>
       <span className={cn('size-2 shrink-0 rounded-full', projectDotClass[project.color])} />
       <span className="truncate">{project.name}</span>
     </Link>
@@ -98,7 +111,7 @@ export function Sidebar({ projects, userLabel }: { projects: Promise<SidebarProj
 
         <nav className="flex flex-col gap-0.5 px-2">
           {NAV.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className={linkClass(isActive(pathname, href))}>
+            <Link key={href} href={href} className={linkClass(navState(pathname, href))}>
               <Icon className="size-4" />
               {label}
             </Link>
@@ -119,12 +132,12 @@ export function Sidebar({ projects, userLabel }: { projects: Promise<SidebarProj
             </span>
             <ThemeSelector />
           </div>
-          <Link href="/admin" prefetch={false} className={linkClass(false)}>
+          <Link href="/admin" prefetch={false} className={linkClass('none')}>
             <SettingsIcon className="size-4" />
             Admin panel
           </Link>
           <form action={logoutAction}>
-            <button type="submit" className={cn(linkClass(false), 'w-full')}>
+            <button type="submit" className={cn(linkClass('none'), 'w-full')}>
               <LogOutIcon className="size-4" />
               Sign out
             </button>

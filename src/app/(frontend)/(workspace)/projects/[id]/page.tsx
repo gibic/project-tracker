@@ -41,13 +41,16 @@ export default async function ProjectPage({ params }: Props) {
             {readOnly && <Badge variant="outline">Archived</Badge>}
           </span>
         }
-        description={project.description || undefined}
+        description={
+          <div className="flex flex-col gap-3">
+            {project.description && <p className="[overflow-wrap:anywhere]">{project.description}</p>}
+            <div className="w-full max-w-md sm:w-96">
+              <ProgressBar progress={project.progress} color={project.color} />
+            </div>
+          </div>
+        }
         actions={<ProjectActions project={project} />}
       />
-
-      <div className="mb-6 max-w-md">
-        <ProgressBar progress={project.progress} color={project.color} />
-      </div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <BoardStoreProvider projectId={project.id} tasks={tasks}>
