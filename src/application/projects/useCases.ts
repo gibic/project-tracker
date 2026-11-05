@@ -6,6 +6,7 @@ import type { Task } from '@/domain/tasks/task'
 
 import { validateProjectInput } from '@/domain/projects/project'
 import { NotFoundError } from '@/domain/shared/errors'
+import { definedFields } from '@/domain/shared/validation'
 import { computeProgress, type Progress } from '@/domain/tasks/progress'
 import { compareByPosition } from '@/domain/tasks/task'
 
@@ -37,13 +38,14 @@ export const createProject = async (
   input: Partial<Record<keyof ProjectInput, unknown>>,
 ): Promise<Project> => ctx.projects.create(validateProjectInput(input))
 
+/** Fields left `undefined` keep their current value. */
 export const updateProject = async (
   ctx: AppContext,
   id: ID,
   input: Partial<Record<keyof ProjectInput, unknown>>,
 ): Promise<Project> => {
-  await requireProject(ctx, id)
-  return ctx.projects.update(id, validateProjectInput(input))
+  const project = await requireProject(ctx, id)
+  return ctx.projects.update(id, validateProjectInput({ ...project, ...definedFields(input) }))
 }
 
 export const setProjectArchived = async (ctx: AppContext, id: ID, archived: boolean): Promise<Project> => {

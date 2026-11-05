@@ -14,6 +14,19 @@ export const getSessionUser = async (): Promise<User | null> => {
   return user ?? null
 }
 
+/**
+ * Resolves a Payload user API key (Admin > Users > Enable API Key) to its user.
+ * Used by non-browser clients such as MCP agents, which have no session cookie.
+ */
+export const getApiKeyUser = async (apiKey: string): Promise<User | null> => {
+  if (!apiKey) return null
+  const payload = await getPayloadClient()
+  const { user } = await payload.auth({
+    headers: new Headers({ Authorization: `users API-Key ${apiKey}` }),
+  })
+  return user ?? null
+}
+
 /** Verifies credentials and sets the auth cookie. Throws on bad credentials. */
 export const signIn = async (email: string, password: string): Promise<void> => {
   await login({ collection: 'users', config, email, password })

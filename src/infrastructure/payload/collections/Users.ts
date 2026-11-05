@@ -15,7 +15,10 @@ export const Users: CollectionConfig = {
     defaultColumns: ['name', 'email'],
     useAsTitle: 'name',
   },
-  auth: true,
+  auth: {
+    // API keys authenticate MCP clients (see src/app/(mcp)/mcp/route.ts).
+    useAPIKey: true,
+  },
   fields: [
     {
       name: 'name',

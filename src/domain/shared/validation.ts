@@ -25,3 +25,7 @@ export const oneOf = <T extends string>(
   if (typeof value === 'string' && (allowed as readonly string[]).includes(value)) return value as T
   throw new ValidationError(`${field} must be one of: ${allowed.join(', ')}`, field)
 }
+
+/** Drops `undefined` entries so a partial update can be spread over the current values. */
+export const definedFields = <T extends object>(input: T): Partial<T> =>
+  Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) as Partial<T>

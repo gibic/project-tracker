@@ -56,7 +56,7 @@ const eslintConfig = [
     },
   },
   {
-    files: ['src/features/**/*.{ts,tsx}', 'src/app/(frontend)/**/*.{ts,tsx}', 'src/components/**/*.{ts,tsx}'],
+    files: ['src/features/**/*.{ts,tsx}', 'src/app/(frontend)/**/*.{ts,tsx}', 'src/app/(mcp)/**/*.ts', 'src/components/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': restrict([
         {

@@ -7,6 +7,7 @@ import {
   deleteProject,
   getProjectBoard,
   setProjectArchived,
+  updateProject,
 } from '@/application/projects/useCases'
 import { createTask, deleteTask, moveTask, updateTask } from '@/application/tasks/useCases'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
@@ -94,6 +95,12 @@ describe('projects', () => {
     await expect(getProjectBoard(ctx, project.id)).rejects.toThrow(NotFoundError)
   })
 
+  it('keeps omitted fields on update', async () => {
+    const { ctx, project } = await setup()
+    const updated = await updateProject(ctx, project.id, { description: 'Q4 launch' })
+    expect(updated).toMatchObject({ name: 'Launch', color: 'sky', description: 'Q4 launch' })
+  })
+
   it('groups notes by task on the board', async () => {
     const { ctx, project } = await setup()
     const task = await createTask(ctx, { projectId: project.id, title: 'A' })
@@ -132,6 +139,13 @@ describe('notes', () => {
     const { ctx, project } = await setup()
     const note = await createNote(ctx, { title: 'N', projectIds: [project.id, '999'], taskIds: ['998'] })
     expect(note).toMatchObject({ projectIds: [project.id], taskIds: [] })
+  })
+
+  it('keeps omitted fields on update and re-derives link keys from a new body', async () => {
+    const { ctx, project } = await setup()
+    const note = await createNote(ctx, { title: 'N', body: 'old', tags: ['a'], projectIds: [project.id] })
+    const updated = await updateNote(ctx, note.id, { body: 'See [[Other]]' })
+    expect(updated).toMatchObject({ title: 'N', tags: ['a'], projectIds: [project.id], linkKeys: ['other'] })
   })
 
   it('counts tags', async () => {

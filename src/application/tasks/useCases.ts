@@ -4,6 +4,7 @@ import type { Task, TaskInput, TaskStatus } from '@/domain/tasks/task'
 
 import { assertProjectIsActive } from '@/domain/projects/project'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
+import { definedFields } from '@/domain/shared/validation'
 import {
   applyStatusChange,
   compareByPosition,
@@ -53,8 +54,7 @@ export const updateTask = async (
   input: Partial<Record<keyof TaskInput, unknown>> & { status?: unknown },
 ): Promise<Task> => {
   const task = await requireEditableTask(ctx, id)
-  const provided = Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined))
-  const fields = validateTaskInput({ ...task, ...provided })
+  const fields = validateTaskInput({ ...task, ...definedFields(input) })
 
   if (input.status === undefined || input.status === task.status) return ctx.tasks.update(id, fields)
 

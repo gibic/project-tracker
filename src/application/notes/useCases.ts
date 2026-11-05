@@ -6,6 +6,7 @@ import type { Task } from '@/domain/tasks/task'
 
 import { deriveLinkKeys, extractWikiLinks, titleKey, validateNoteInput } from '@/domain/notes/note'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
+import { definedFields } from '@/domain/shared/validation'
 
 const requireNote = async (ctx: AppContext, id: ID): Promise<Note> => {
   const note = await ctx.notes.findById(id)
@@ -44,9 +45,10 @@ export const createNote = async (ctx: AppContext, input: NoteFormInput): Promise
   })
 }
 
+/** Fields left `undefined` keep their current value. */
 export const updateNote = async (ctx: AppContext, id: ID, input: NoteFormInput): Promise<Note> => {
-  await requireNote(ctx, id)
-  const fields = validateNoteInput(input)
+  const note = await requireNote(ctx, id)
+  const fields = validateNoteInput({ ...note, ...definedFields(input) })
   await assertTitleIsFree(ctx, fields.title, id)
   return ctx.notes.update(id, {
     ...fields,
