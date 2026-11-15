@@ -53,6 +53,9 @@ importers:
       graphql:
         specifier: ^16.8.2
         version: 16.14.2
+      html-react-parser:
+        specifier: ^6.1.9
+        version: 6.1.9(@types/react@19.2.14)(react@19.2.6)
       lucide-react:
         specifier: 0.563.0
         version: 0.563.0(react@19.2.6)
@@ -2750,8 +2753,24 @@ packages:
   dom-helpers@5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
 
+  dom-serializer@3.1.1:
+    resolution: {integrity: sha512-4MEa38/QexBob6gFNwu+EGdWvhJ1OKuNwdYY3Y3NyeWDQfnGeDYQUDfIRzWu5B5gsv03so2Uxd28YC6zrsx3Lw==}
+    engines: {node: '>=20.19.0'}
+
+  domelementtype@3.0.0:
+    resolution: {integrity: sha512-umCQid3jKbDmVjx8jGaW7uUykm4DEUeyV21hPxNMo2nV955DhUThwqyOIDtreepP31hl84X7G5U9ZfsWvIB3Pg==}
+    engines: {node: '>=20.19.0'}
+
+  domhandler@6.0.1:
+    resolution: {integrity: sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==}
+    engines: {node: '>=20.19.0'}
+
   dompurify@3.4.15:
     resolution: {integrity: sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==}
+
+  domutils@4.0.2:
+    resolution: {integrity: sha512-qI4JLRKnSzqFqr7hAlS5xQDusBCjKSEG4t4+7aNrIQMHBcsC2TGEhuyABJdYkgSewL57PNLYEiibY2iPKhKpaA==}
+    engines: {node: '>=20.19.0'}
 
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
@@ -3302,9 +3321,25 @@ packages:
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
 
+  html-dom-parser@8.0.2:
+    resolution: {integrity: sha512-UnUW0rcyfkYo9OCgeo+5Pzc4lRaifZB4h8RlGRwYIJmEz97Q3OKIYhNVXhG53jmNKWvBrq9n4ZzZIZAECnatSw==}
+
   html-encoding-sniffer@6.0.0:
     resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+
+  html-react-parser@6.1.9:
+    resolution: {integrity: sha512-5lQzzUQXrFe1+OR7GOGkATsm/2h3UIIWQvPkl+84+A9vYG6zbGxhZJjrCDlGvmQs7qPMbffO3XYizVrHekLZbA==}
+    peerDependencies:
+      '@types/react': 0.14 || 15 || 16 || 17 || 18 || 19
+      react: 0.14 || 15 || 16 || 17 || 18 || 19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+  htmlparser2@12.0.0:
+    resolution: {integrity: sha512-Tz7u1i95/g2x2jz81+x0FBVhBhY5aRTvD3tXXdFaljuNdzDLJ8UGNRrTcj2cgQvAg3iW/h77Fz15nLW0L0CrZw==}
+    engines: {node: '>=20.19.0'}
 
   http-proxy-agent@7.0.2:
     resolution: {integrity: sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==}
@@ -3344,6 +3379,9 @@ packages:
   imurmurhash@0.1.4:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
     engines: {node: '>=0.8.19'}
+
+  inline-style-parser@0.2.9:
+    resolution: {integrity: sha512-IttN8BqKLxzUrnTqHI+/hwAJQItBAUjdoHERCDv+oOuX48VP6bzW8+QjOXSfoevzq3YrYAwX1uLHp8TqO9yIeg==}
 
   internal-slot@1.1.0:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
@@ -4172,6 +4210,9 @@ packages:
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
 
+  react-property@2.0.2:
+    resolution: {integrity: sha512-+PbtI3VuDV0l6CleQMsx2gtK0JZbZKbpdu5ynr+lbsuvtmgbNcS3VM0tuY2QjFNOcWxvXeHjDpy42RO+4U2rug==}
+
   react-refresh@0.17.0:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
     engines: {node: '>=0.10.0'}
@@ -4464,6 +4505,12 @@ packages:
   strtok3@10.6.2:
     resolution: {integrity: sha512-BkdixFFUt7r7LsX6aGNPVyYMLjW+M1USLlKPNbZsrZEmLFh5tGqhdfckKo6xgsZIJqdDD0CZGkeCJJwNWQIKQA==}
     engines: {node: '>=18'}
+
+  style-to-js@2.0.2:
+    resolution: {integrity: sha512-ctgbFvvi406Jvhi/s6TJtX6XYYCCTg6POgsL+SLmrl2RHFgwulepqtYPrtKuEmT8kmyk/+fxfNzuhRLO4zsASg==}
+
+  style-to-object@2.0.2:
+    resolution: {integrity: sha512-QmbXPUylqU80HAgTOJeEOdbA40W9KtxmjMhQy+tq+b8F2aoh3aQLuy82hh2jm2qsC9hR9eI0+eQidTMydKcqRA==}
 
   styled-jsx@5.1.6:
     resolution: {integrity: sha512-qSVyDTeMotdvQYoHWLNGwRFJHC+i+ZvdBRYosOFgC+Wg1vx4frN2/RG/NA7SYqqvKNLf39P2LSRA2pu6n0XYZA==}
@@ -7386,9 +7433,27 @@ snapshots:
       '@babel/runtime': 7.29.10
       csstype: 3.2.3
 
+  dom-serializer@3.1.1:
+    dependencies:
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
+      entities: 8.1.0
+
+  domelementtype@3.0.0: {}
+
+  domhandler@6.0.1:
+    dependencies:
+      domelementtype: 3.0.0
+
   dompurify@3.4.15:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
+
+  domutils@4.0.2:
+    dependencies:
+      dom-serializer: 3.1.1
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
 
   dotenv@16.4.7: {}
 
@@ -8078,11 +8143,33 @@ snapshots:
     dependencies:
       react-is: 16.13.1
 
+  html-dom-parser@8.0.2:
+    dependencies:
+      domhandler: 6.0.1
+      htmlparser2: 12.0.0
+
   html-encoding-sniffer@6.0.0:
     dependencies:
       '@exodus/bytes': 1.16.0
     transitivePeerDependencies:
       - '@noble/hashes'
+
+  html-react-parser@6.1.9(@types/react@19.2.14)(react@19.2.6):
+    dependencies:
+      domhandler: 6.0.1
+      html-dom-parser: 8.0.2
+      react: 19.2.6
+      react-property: 2.0.2
+      style-to-js: 2.0.2
+    optionalDependencies:
+      '@types/react': 19.2.14
+
+  htmlparser2@12.0.0:
+    dependencies:
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
+      domutils: 4.0.2
+      entities: 8.1.0
 
   http-proxy-agent@7.0.2(supports-color@7.2.0):
     dependencies:
@@ -8116,6 +8203,8 @@ snapshots:
       resolve-from: 4.0.0
 
   imurmurhash@0.1.4: {}
+
+  inline-style-parser@0.2.9: {}
 
   internal-slot@1.1.0:
     dependencies:
@@ -9112,6 +9201,8 @@ snapshots:
 
   react-is@17.0.2: {}
 
+  react-property@2.0.2: {}
+
   react-refresh@0.17.0: {}
 
   react-remove-scroll-bar@2.3.8(@types/react@19.2.14)(react@19.2.6):
@@ -9500,6 +9591,14 @@ snapshots:
   strtok3@10.6.2:
     dependencies:
       '@tokenizer/token': 0.3.0
+
+  style-to-js@2.0.2:
+    dependencies:
+      style-to-object: 2.0.2
+
+  style-to-object@2.0.2:
+    dependencies:
+      inline-style-parser: 0.2.9
 
   styled-jsx@5.1.6(@babel/core@7.29.7(supports-color@7.2.0))(babel-plugin-macros@3.1.0)(react@19.2.6):
     dependencies:

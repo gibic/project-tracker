@@ -53,7 +53,7 @@ const isHeaderRow = (row: TableRowNode) =>
 /*
  * The default table converters inline `border: 1px solid #ccc` on every cell and put all rows
  * in <tbody>. These emit plain semantic markup instead (leading header rows in <thead>,
- * no inline styles) so the workspace can theme tables with CSS.
+ * no inline styles) so the workspace can swap them for its own table components.
  */
 const tableConverters: HTMLConverters = {
   table: ({ node, nodesToHTML }) => {

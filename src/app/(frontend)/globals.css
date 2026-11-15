@@ -214,48 +214,6 @@
   }
 }
 
-/* Tables rendered from note markdown (see infrastructure/payload/richText.ts). */
-@layer components {
-  .note-table {
-    @apply my-5 overflow-x-auto rounded-lg border border-border;
-  }
-
-  .note-table table {
-    @apply my-0 w-full border-collapse text-sm;
-  }
-
-  .note-table th,
-  .note-table td {
-    @apply border-b border-border px-3 py-2 text-left align-top;
-  }
-
-  .note-table th + th,
-  .note-table td + td {
-    @apply border-l;
-  }
-
-  .note-table thead th {
-    @apply bg-muted text-xs font-semibold tracking-wide text-muted-foreground uppercase;
-  }
-
-  .note-table tbody tr:last-child td,
-  .note-table tbody tr:last-child th {
-    @apply border-b-0;
-  }
-
-  .note-table tbody tr:nth-child(even) {
-    @apply bg-muted/40;
-  }
-
-  .note-table tbody tr:hover {
-    @apply bg-muted/70;
-  }
-
-  .note-table :is(th, td) > p {
-    @apply my-0;
-  }
-}
-
 html {
   opacity: 0;
 }
