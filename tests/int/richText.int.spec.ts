@@ -9,9 +9,11 @@ describe('rich text conversion', () => {
   it('renders markdown tables as HTML tables', async () => {
     const sanitized = await config
     const html = await createRichTextRenderer(sanitized).toHtml(table)
-    expect(html).toContain('<table')
-    expect(html).toContain('<th')
+    expect(html).toContain('<div class="note-table"><table>')
+    expect(html).toMatch(/<thead><tr><th>.*Column.*<\/th>/)
+    expect(html).toContain('<tbody>')
     expect(html).toContain('<code>id</code>')
+    expect(html).not.toContain('style=')
   })
 
   it('round-trips markdown tables', async () => {
