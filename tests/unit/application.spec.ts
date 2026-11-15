@@ -67,6 +67,49 @@ describe('tasks', () => {
     expect(updated.dueDate?.toISOString()).toBe('2026-11-01T12:00:00.000Z')
   })
 
+  it('creates the next occurrence when a repeating task is completed', async () => {
+    const { ctx, project } = await setup()
+    const task = await createTask(ctx, {
+      projectId: project.id,
+      title: 'Weekly review',
+      description: 'Check goals',
+      priority: 'high',
+      dueDate: '2099-01-05',
+      recurrence: 'weekly',
+    })
+
+    const done = await moveTask(ctx, { taskId: task.id, status: 'done' })
+    expect(done).toMatchObject({ status: 'done', recurrence: null })
+
+    const { tasks } = await getProjectBoard(ctx, project.id)
+    const next = tasks.find((t) => t.status === 'todo')
+    expect(next).toMatchObject({ title: 'Weekly review', description: 'Check goals', priority: 'high', recurrence: 'weekly' })
+    expect(next?.id).not.toBe(task.id)
+    expect(next?.dueDate?.toISOString()).toBe('2099-01-12T12:00:00.000Z')
+    expect(next?.completedAt).toBeNull()
+  })
+
+  it('does not repeat twice when a completed task is reopened and completed again', async () => {
+    const { ctx, project } = await setup()
+    const task = await createTask(ctx, { projectId: project.id, title: 'Daily', recurrence: 'daily' })
+    await updateTask(ctx, task.id, { status: 'done' })
+    await moveTask(ctx, { taskId: task.id, status: 'todo' })
+    await moveTask(ctx, { taskId: task.id, status: 'done' })
+    const { tasks } = await getProjectBoard(ctx, project.id)
+    expect(tasks).toHaveLength(2)
+  })
+
+  it('does not repeat one-off tasks or moves within done', async () => {
+    const { ctx, project } = await setup()
+    const once = await createTask(ctx, { projectId: project.id, title: 'Once' })
+    await moveTask(ctx, { taskId: once.id, status: 'done' })
+    const repeating = await createTask(ctx, { projectId: project.id, title: 'R', recurrence: 'daily' })
+    await updateTask(ctx, repeating.id, { recurrence: 'none' })
+    await moveTask(ctx, { taskId: repeating.id, status: 'done' })
+    const { tasks } = await getProjectBoard(ctx, project.id)
+    expect(tasks).toHaveLength(2)
+  })
+
   it('blocks changes in archived projects', async () => {
     const { ctx, project } = await setup()
     const task = await createTask(ctx, { projectId: project.id, title: 'A' })

@@ -2,6 +2,7 @@ import type { Note, NoteSummary } from '@/domain/notes/note'
 import type { OAuthClient, OAuthGrant } from '@/domain/oauth/oauth'
 import type { Project, ProjectColor, ProjectStatus } from '@/domain/projects/project'
 import type { ID } from '@/domain/shared/types'
+import type { TaskRecurrence } from '@/domain/tasks/recurrence'
 import type { Task, TaskPriority, TaskStatus } from '@/domain/tasks/task'
 
 /*
@@ -30,6 +31,7 @@ export interface NewTask {
   status: TaskStatus
   priority: TaskPriority
   dueDate: Date | null
+  recurrence: TaskRecurrence | null
   position: number
   completedAt: Date | null
 }

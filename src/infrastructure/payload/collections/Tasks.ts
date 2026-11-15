@@ -1,11 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
+import { TASK_RECURRENCES, TASK_RECURRENCE_LABELS } from '@/domain/tasks/recurrence'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_STATUS_LABELS } from '@/domain/tasks/task'
 import { authenticated, ownedByUser } from '../access'
 import { ownerField } from '../fields/owner'
 
 /*
- * Business rules (completedAt, ordering, archived projects) live in the application layer.
+ * Business rules (completedAt, ordering, recurrence, archived projects) live in the application layer.
  * Edits made in the admin panel bypass them, so treat the admin as a raw data editor.
  */
 export const Tasks: CollectionConfig = {
@@ -52,6 +53,12 @@ export const Tasks: CollectionConfig = {
         },
         { name: 'dueDate', type: 'date', index: true },
       ],
+    },
+    {
+      name: 'recurrence',
+      type: 'select',
+      options: TASK_RECURRENCES.map((value) => ({ label: TASK_RECURRENCE_LABELS[value], value })),
+      admin: { description: 'Completing the task in the workspace creates the next occurrence.' },
     },
     { name: 'position', type: 'number', required: true, defaultValue: 0, admin: { position: 'sidebar' } },
     { name: 'completedAt', type: 'date', admin: { position: 'sidebar', readOnly: true } },

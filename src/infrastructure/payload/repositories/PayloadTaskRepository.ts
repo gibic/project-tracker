@@ -14,6 +14,7 @@ const toTask = (doc: TaskDoc): Task => ({
   status: doc.status,
   priority: doc.priority,
   dueDate: toDate(doc.dueDate),
+  recurrence: doc.recurrence ?? null,
   position: doc.position,
   completedAt: toDate(doc.completedAt),
   createdAt: new Date(doc.createdAt),

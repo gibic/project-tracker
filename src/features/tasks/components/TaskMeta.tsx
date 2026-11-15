@@ -1,9 +1,10 @@
 'use client'
 
-import { CalendarIcon, NotebookPenIcon } from 'lucide-react'
+import { CalendarIcon, NotebookPenIcon, RepeatIcon } from 'lucide-react'
 
 import type { Task } from '@/domain/tasks/task'
 
+import { TASK_RECURRENCE_LABELS } from '@/domain/tasks/recurrence'
 import { isOverdue } from '@/domain/tasks/task'
 import { cn } from '@/utilities/ui'
 import { formatDueDate } from '../../shared/format'
@@ -24,6 +25,15 @@ export function TaskMeta({ task, noteCount = 0 }: { task: Task; noteCount?: numb
           <CalendarIcon className="size-3" />
           {formatDueDate(task.dueDate)}
           {overdue && ' · overdue'}
+        </span>
+      )}
+      {task.recurrence && (
+        <span
+          className="inline-flex items-center text-muted-foreground"
+          title={TASK_RECURRENCE_LABELS[task.recurrence]}
+          aria-label={TASK_RECURRENCE_LABELS[task.recurrence]}
+        >
+          <RepeatIcon className="size-3" />
         </span>
       )}
       {noteCount > 0 && (

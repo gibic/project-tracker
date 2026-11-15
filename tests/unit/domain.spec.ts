@@ -4,6 +4,7 @@ import { deriveLinkKeys, extractWikiLinks, normalizeTags, validateNoteInput } fr
 import { validateProjectInput } from '@/domain/projects/project'
 import { ValidationError } from '@/domain/shared/errors'
 import { computeProgress } from '@/domain/tasks/progress'
+import { nextDueDate, parseRecurrence } from '@/domain/tasks/recurrence'
 import {
   applyStatusChange,
   compareByUrgency,
@@ -24,6 +25,7 @@ const task = (overrides: Partial<Task> = {}): Task => ({
   status: 'todo',
   priority: 'medium',
   dueDate: null,
+  recurrence: null,
   position: 1024,
   completedAt: null,
   createdAt: now,
@@ -91,6 +93,50 @@ describe('tasks', () => {
     expect(computeProgress([])).toMatchObject({ total: 0, percent: 0 })
     const progress = computeProgress([task({ status: 'done' }), task(), task({ status: 'in_progress' })])
     expect(progress).toMatchObject({ total: 3, done: 1, percent: 33, byStatus: { todo: 1, in_progress: 1, done: 1 } })
+  })
+})
+
+describe('recurrence', () => {
+  // `now` is Wednesday 2026-10-21.
+  const day = (iso: string) => new Date(`${iso}T12:00:00.000Z`)
+  const next = (...args: Parameters<typeof nextDueDate>) => nextDueDate(...args).toISOString().slice(0, 10)
+
+  it('parses empty values as no recurrence and rejects unknown ones', () => {
+    expect(parseRecurrence(undefined)).toBeNull()
+    expect(parseRecurrence('')).toBeNull()
+    expect(parseRecurrence('none')).toBeNull()
+    expect(parseRecurrence('weekly')).toBe('weekly')
+    expect(() => parseRecurrence('hourly')).toThrow(/recurrence/)
+    expect(validateTaskInput({ title: 'x' }).recurrence).toBeNull()
+  })
+
+  it('advances from the due date', () => {
+    expect(next('daily', day('2026-10-25'), now)).toBe('2026-10-26')
+    expect(next('weekly', day('2026-10-25'), now)).toBe('2026-11-01')
+    expect(next('monthly', day('2026-10-25'), now)).toBe('2026-11-25')
+    expect(next('yearly', day('2026-10-25'), now)).toBe('2027-10-25')
+  })
+
+  it('counts from today without a due date', () => {
+    expect(next('daily', null, now)).toBe('2026-10-22')
+    expect(next('weekly', null, now)).toBe('2026-10-28')
+  })
+
+  it('skips occurrences that are today or past when completed late', () => {
+    expect(next('daily', day('2026-10-01'), now)).toBe('2026-10-22')
+    expect(next('weekly', day('2026-10-07'), now)).toBe('2026-10-28')
+    expect(next('monthly', day('2026-10-21'), now)).toBe('2026-11-21')
+  })
+
+  it('skips weekends for weekdays', () => {
+    expect(next('weekdays', day('2026-10-23'), now)).toBe('2026-10-26') // Friday to Monday
+    expect(next('weekdays', day('2026-10-14'), now)).toBe('2026-10-22')
+  })
+
+  it('clamps month ends without drifting', () => {
+    expect(next('monthly', day('2027-01-31'), now)).toBe('2027-02-28')
+    expect(next('monthly', day('2026-08-31'), now)).toBe('2026-10-31')
+    expect(next('yearly', day('2028-02-29'), now)).toBe('2029-02-28')
   })
 })
 

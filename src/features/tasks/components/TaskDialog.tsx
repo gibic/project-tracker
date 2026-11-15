@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
+import { TASK_RECURRENCES, TASK_RECURRENCE_LABELS } from '@/domain/tasks/recurrence'
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/domain/tasks/task'
 import { toDateInputValue } from '../../shared/format'
 import { SectionHeading } from '../../shared/headings'
@@ -41,6 +42,7 @@ export function TaskDialog({
         status: formData.get('status'),
         priority: formData.get('priority'),
         dueDate: formData.get('dueDate'),
+        recurrence: formData.get('recurrence'),
       },
       closeTask,
     )
@@ -62,7 +64,7 @@ export function TaskDialog({
               <Label htmlFor="task-description">Description</Label>
               <Textarea id="task-description" name="description" defaultValue={task.description} rows={4} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="task-status">Status</Label>
                 <NativeSelect id="task-status" name="status" defaultValue={task.status}>
@@ -86,6 +88,17 @@ export function TaskDialog({
               <div className="flex flex-col gap-2">
                 <Label htmlFor="task-due">Due date</Label>
                 <Input id="task-due" name="dueDate" type="date" defaultValue={toDateInputValue(task.dueDate)} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="task-recurrence">Repeat</Label>
+                <NativeSelect id="task-recurrence" name="recurrence" defaultValue={task.recurrence ?? 'none'}>
+                  <option value="none">Does not repeat</option>
+                  {TASK_RECURRENCES.map((r) => (
+                    <option key={r} value={r}>
+                      {TASK_RECURRENCE_LABELS[r]}
+                    </option>
+                  ))}
+                </NativeSelect>
               </div>
             </div>
           </fieldset>

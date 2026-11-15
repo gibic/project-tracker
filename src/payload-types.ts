@@ -160,6 +160,10 @@ export interface Task {
   status: 'todo' | 'in_progress' | 'done';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   dueDate?: string | null;
+  /**
+   * Completing the task in the workspace creates the next occurrence.
+   */
+  recurrence?: ('daily' | 'weekdays' | 'weekly' | 'monthly' | 'yearly') | null;
   position: number;
   completedAt?: string | null;
   owner: number | User;
@@ -394,6 +398,7 @@ export interface TasksSelect<T extends boolean = true> {
   status?: T;
   priority?: T;
   dueDate?: T;
+  recurrence?: T;
   position?: T;
   completedAt?: T;
   owner?: T;

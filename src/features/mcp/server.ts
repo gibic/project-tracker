@@ -16,6 +16,7 @@ import {
 import { createTask, deleteTask, moveTask, updateTask } from '@/application/tasks/useCases'
 import { PROJECT_COLORS } from '@/domain/projects/project'
 import { isDomainError } from '@/domain/shared/errors'
+import { TASK_RECURRENCES } from '@/domain/tasks/recurrence'
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/domain/tasks/task'
 
 /*
@@ -34,6 +35,9 @@ const projectColor = z.enum(PROJECT_COLORS)
 const taskStatus = z.enum(TASK_STATUSES)
 const taskPriority = z.enum(TASK_PRIORITIES)
 const dueDate = z.string().describe('Calendar day as YYYY-MM-DD')
+const recurrence = z
+  .enum(TASK_RECURRENCES)
+  .describe('Repeat schedule. Completing the task creates the next occurrence in todo with the next due date')
 const tags = z.array(z.string()).describe('Tags; normalized to lowercase kebab-case')
 
 const READ = { readOnlyHint: true, openWorldHint: false } as const
@@ -159,6 +163,7 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
         status: taskStatus.optional().describe('Defaults to todo'),
         priority: taskPriority.optional().describe('Defaults to medium'),
         dueDate: dueDate.optional(),
+        recurrence: recurrence.optional().describe('Omit for a one-off task'),
       }),
       annotations: WRITE,
     },
@@ -171,7 +176,8 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
       title: 'Update task',
       description:
         'Changes task fields. Omitted fields keep their current value; dueDate null clears it. ' +
-        'A status change moves the task to the bottom of the new column.',
+        'A status change moves the task to the bottom of the new column. ' +
+        'Completing a repeating task creates its next occurrence and clears recurrence on the completed one.',
       inputSchema: z.object({
         taskId: id('Task'),
         title: z.string().max(200).optional(),
@@ -179,6 +185,7 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
         status: taskStatus.optional(),
         priority: taskPriority.optional(),
         dueDate: dueDate.nullable().optional(),
+        recurrence: recurrence.nullable().optional().describe('null stops repeating'),
       }),
       annotations: WRITE,
     },
@@ -191,7 +198,7 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
       title: 'Move task',
       description:
         'Moves a task to a status column, optionally between two tasks already in that column. ' +
-        'Without neighbours it goes to the bottom.',
+        'Without neighbours it goes to the bottom. Moving a repeating task to done creates its next occurrence.',
       inputSchema: z.object({
         taskId: id('Task'),
         status: taskStatus,

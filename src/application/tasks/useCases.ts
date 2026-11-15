@@ -5,6 +5,7 @@ import type { Task, TaskInput, TaskStatus } from '@/domain/tasks/task'
 import { assertProjectIsActive } from '@/domain/projects/project'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
 import { definedFields } from '@/domain/shared/validation'
+import { nextDueDate } from '@/domain/tasks/recurrence'
 import {
   applyStatusChange,
   compareByPosition,
@@ -26,6 +27,29 @@ const requireEditableTask = async (ctx: AppContext, id: ID): Promise<Task> => {
   return task
 }
 
+/**
+ * Completing a repeating task creates its next occurrence at the bottom of the todo column.
+ * The recurrence moves to the new task, so the completed one stays as history and
+ * reopening and completing it again does not create a second copy.
+ */
+const recurIfCompleted = async (ctx: AppContext, previous: TaskStatus, task: Task): Promise<Task> => {
+  if (previous === 'done' || task.status !== 'done' || !task.recurrence) return task
+
+  const max = await ctx.tasks.maxPosition(task.projectId, 'todo')
+  await ctx.tasks.create({
+    projectId: task.projectId,
+    title: task.title,
+    description: task.description,
+    priority: task.priority,
+    recurrence: task.recurrence,
+    dueDate: nextDueDate(task.recurrence, task.dueDate, ctx.clock.now()),
+    status: 'todo',
+    completedAt: null,
+    position: positionBetween(max, null),
+  })
+  return ctx.tasks.update(task.id, { recurrence: null })
+}
+
 export type CreateTaskInput = Partial<Record<keyof TaskInput, unknown>> & {
   projectId: ID
   status?: unknown
@@ -40,12 +64,13 @@ export const createTask = async (ctx: AppContext, input: CreateTaskInput): Promi
   const status = input.status === undefined ? 'todo' : parseTaskStatus(input.status)
   const max = await ctx.tasks.maxPosition(project.id, status)
 
-  return ctx.tasks.create({
+  const task = await ctx.tasks.create({
     ...fields,
     projectId: project.id,
     position: positionBetween(max, null),
     ...applyStatusChange({ status: 'todo', completedAt: null }, status, ctx.clock.now()),
   })
+  return recurIfCompleted(ctx, 'todo', task)
 }
 
 export const updateTask = async (
@@ -61,11 +86,12 @@ export const updateTask = async (
   // Changing status from the edit form behaves like dropping the task at the bottom of the new column.
   const status = parseTaskStatus(input.status)
   const max = await ctx.tasks.maxPosition(task.projectId, status)
-  return ctx.tasks.update(id, {
+  const updated = await ctx.tasks.update(id, {
     ...fields,
     ...applyStatusChange(task, status, ctx.clock.now()),
     position: positionBetween(max, null),
   })
+  return recurIfCompleted(ctx, task.status, updated)
 }
 
 export interface MoveTaskInput {
@@ -105,7 +131,8 @@ export const moveTask = async (ctx: AppContext, input: MoveTaskInput): Promise<T
     position = positionBetween(column.at(-1)?.position, null)
   }
 
-  return ctx.tasks.update(task.id, { ...applyStatusChange(task, status, ctx.clock.now()), position })
+  const moved = await ctx.tasks.update(task.id, { ...applyStatusChange(task, status, ctx.clock.now()), position })
+  return recurIfCompleted(ctx, task.status, moved)
 }
 
 export const setTaskStatus = (ctx: AppContext, taskId: ID, status: TaskStatus): Promise<Task> =>

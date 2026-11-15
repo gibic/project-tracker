@@ -2,6 +2,7 @@ import type { ID } from '../shared/types'
 
 import { ValidationError } from '../shared/errors'
 import { oneOf, optionalText, requireText } from '../shared/validation'
+import { parseRecurrence, type TaskRecurrence } from './recurrence'
 
 export const TASK_STATUSES = ['todo', 'in_progress', 'done'] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number]
@@ -25,6 +26,8 @@ export interface Task {
   status: TaskStatus
   priority: TaskPriority
   dueDate: Date | null
+  /** Completing a repeating task creates the next occurrence; null means it does not repeat. */
+  recurrence: TaskRecurrence | null
   /** Sort key inside a status column. Fractional so a move only rewrites one task. */
   position: number
   completedAt: Date | null
@@ -37,6 +40,7 @@ export interface TaskInput {
   description: string
   priority: TaskPriority
   dueDate: Date | null
+  recurrence: TaskRecurrence | null
 }
 
 /**
@@ -61,6 +65,7 @@ export const validateTaskInput = (input: Partial<Record<keyof TaskInput, unknown
   priority:
     input.priority === undefined ? 'medium' : oneOf(input.priority, TASK_PRIORITIES, 'priority'),
   dueDate: parseDueDate(input.dueDate),
+  recurrence: parseRecurrence(input.recurrence),
 })
 
 export const parseTaskStatus = (value: unknown): TaskStatus => oneOf(value, TASK_STATUSES, 'status')
