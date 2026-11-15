@@ -10,7 +10,16 @@ import {
   updateProject,
 } from '@/application/projects/useCases'
 import { search } from '@/application/search/useCases'
-import { createTask, deleteTask, moveTask, updateTask } from '@/application/tasks/useCases'
+import {
+  addChecklistItem,
+  createTask,
+  deleteTask,
+  moveChecklistItem,
+  moveTask,
+  removeChecklistItem,
+  updateChecklistItem,
+  updateTask,
+} from '@/application/tasks/useCases'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
 import { createInMemoryContext } from './inMemoryContext'
 
@@ -111,12 +120,63 @@ describe('tasks', () => {
     expect(tasks).toHaveLength(2)
   })
 
+  it('manages an ordered checklist inside a task', async () => {
+    const { ctx, project } = await setup()
+    const task = await createTask(ctx, { projectId: project.id, title: 'Release', checklist: ['Build', 'Test'] })
+    expect(task.checklist.map((i) => [i.text, i.done])).toEqual([
+      ['Build', false],
+      ['Test', false],
+    ])
+
+    const [build, test] = task.checklist
+    let updated = await addChecklistItem(ctx, task.id, { text: ' Ship ' })
+    const ship = updated.checklist[2]
+    expect(ship).toMatchObject({ text: 'Ship', done: false })
+
+    updated = await moveChecklistItem(ctx, task.id, ship.id, { beforeId: build.id, afterId: test.id })
+    expect(updated.checklist.map((i) => i.text)).toEqual(['Build', 'Ship', 'Test'])
+
+    updated = await updateChecklistItem(ctx, task.id, build.id, { done: true, text: 'Build it' })
+    expect(updated.checklist[0]).toMatchObject({ text: 'Build it', done: true })
+    await expect(updateChecklistItem(ctx, task.id, build.id, { done: 'yes' })).rejects.toThrow(ValidationError)
+
+    updated = await removeChecklistItem(ctx, task.id, test.id)
+    expect(updated.checklist.map((i) => i.text)).toEqual(['Build it', 'Ship'])
+
+    // Editing the task fields leaves the checklist alone.
+    expect((await updateTask(ctx, task.id, { title: 'Release 1.0' })).checklist).toHaveLength(2)
+  })
+
+  it('accepts a client-chosen item id only when it is a UUID', async () => {
+    const { ctx, project } = await setup()
+    const task = await createTask(ctx, { projectId: project.id, title: 'A' })
+    const id = crypto.randomUUID()
+    expect((await addChecklistItem(ctx, task.id, { id, text: 'x' })).checklist[0].id).toBe(id)
+    await expect(addChecklistItem(ctx, task.id, { id, text: 'y' })).rejects.toThrow(/already exists/)
+    await expect(addChecklistItem(ctx, task.id, { id: '1', text: 'y' })).rejects.toThrow(/UUID/)
+  })
+
+  it('starts the next occurrence with an unchecked copy of the checklist', async () => {
+    const { ctx, project } = await setup()
+    const task = await createTask(ctx, { projectId: project.id, title: 'Weekly', recurrence: 'weekly', checklist: ['Inbox'] })
+    await updateChecklistItem(ctx, task.id, task.checklist[0].id, { done: true })
+    await moveTask(ctx, { taskId: task.id, status: 'done' })
+
+    const { tasks } = await getProjectBoard(ctx, project.id)
+    const done = tasks.find((t) => t.id === task.id)
+    const next = tasks.find((t) => t.status === 'todo')
+    expect(done?.checklist[0]).toMatchObject({ text: 'Inbox', done: true })
+    expect(next?.checklist[0]).toMatchObject({ text: 'Inbox', done: false })
+    expect(next?.checklist[0].id).not.toBe(task.checklist[0].id)
+  })
+
   it('blocks changes in archived projects', async () => {
     const { ctx, project } = await setup()
     const task = await createTask(ctx, { projectId: project.id, title: 'A' })
     await setProjectArchived(ctx, project.id, true)
     await expect(createTask(ctx, { projectId: project.id, title: 'B' })).rejects.toThrow(/archived/)
     await expect(moveTask(ctx, { taskId: task.id, status: 'done' })).rejects.toThrow(/archived/)
+    await expect(addChecklistItem(ctx, task.id, { text: 'x' })).rejects.toThrow(/archived/)
   })
 
   it('unlinks a deleted task from notes', async () => {

@@ -3,7 +3,19 @@ import { describe, expect, it } from 'vitest'
 import { deriveLinkKeys, extractWikiLinks, normalizeTags, validateNoteInput } from '@/domain/notes/note'
 import { validateProjectInput } from '@/domain/projects/project'
 import { matchesSearchTerms, parseSearchKinds, parseSearchLimit, parseSearchTerms } from '@/domain/search/search'
-import { ValidationError } from '@/domain/shared/errors'
+import { NotFoundError, ValidationError } from '@/domain/shared/errors'
+import {
+  addChecklistItem,
+  CHECKLIST_MAX_ITEMS,
+  checklistProgress,
+  moveChecklistItem,
+  parseChecklistItemId,
+  parseChecklistTexts,
+  removeChecklistItem,
+  resetChecklist,
+  updateChecklistItem,
+  type ChecklistItem,
+} from '@/domain/tasks/checklist'
 import { computeProgress } from '@/domain/tasks/progress'
 import { nextDueDate, parseRecurrence } from '@/domain/tasks/recurrence'
 import {
@@ -27,6 +39,7 @@ const task = (overrides: Partial<Task> = {}): Task => ({
   priority: 'medium',
   dueDate: null,
   recurrence: null,
+  checklist: [],
   position: 1024,
   completedAt: null,
   createdAt: now,
@@ -190,5 +203,70 @@ describe('search', () => {
     expect(matchesSearchTerms('Launch plan for Q4', ['aunch'])).toBe(false)
     expect(matchesSearchTerms('Launch plan for Q4', ['lau', 'zzz'])).toBe(false)
     expect(matchesSearchTerms('anything', [])).toBe(false)
+  })
+})
+
+describe('checklist', () => {
+  const item = (id: string, position: number, done = false): ChecklistItem => ({ id, text: id, done, position })
+  const ids = (items: ChecklistItem[]) => items.map((i) => i.id)
+  const items = [item('a', 1024), item('b', 2048, true), item('c', 3072)]
+
+  it('counts done items', () => {
+    expect(checklistProgress(items)).toEqual({ total: 3, done: 1, percent: 33 })
+    expect(checklistProgress([])).toEqual({ total: 0, done: 0, percent: 0 })
+  })
+
+  it('appends new items unchecked at the bottom', () => {
+    const next = addChecklistItem(items, { id: 'd', text: 'Write docs' })
+    expect(next.at(-1)).toEqual({ id: 'd', text: 'Write docs', done: false, position: 4096 })
+    expect(() => addChecklistItem(next, { id: 'd', text: 'again' })).toThrow(ValidationError)
+    const full = Array.from({ length: CHECKLIST_MAX_ITEMS }, (_, i) => item(String(i), i))
+    expect(() => addChecklistItem(full, { id: 'x', text: 'x' })).toThrow(/at most/)
+  })
+
+  it('moves only the moved item between neighbours', () => {
+    const next = moveChecklistItem(items, 'c', { beforeId: 'a', afterId: 'b' })
+    expect(ids(next)).toEqual(['a', 'c', 'b'])
+    expect(next.find((i) => i.id === 'c')?.position).toBe(1536)
+    expect(next.find((i) => i.id === 'a')?.position).toBe(1024)
+    expect(ids(moveChecklistItem(items, 'c', { afterId: 'a' }))).toEqual(['c', 'a', 'b'])
+    expect(ids(moveChecklistItem(items, 'a', {}))).toEqual(['b', 'c', 'a'])
+  })
+
+  it('renumbers when neighbours share a position', () => {
+    const tied = [item('a', 0), item('b', 0), item('c', 0)]
+    const next = moveChecklistItem(tied, 'c', { beforeId: 'a', afterId: 'b' })
+    expect(ids(next)).toEqual(['a', 'c', 'b'])
+    expect(next.map((i) => i.position)).toEqual([1024, 2048, 3072])
+  })
+
+  it('rejects unknown, self or non-adjacent neighbours', () => {
+    expect(() => moveChecklistItem(items, 'a', { beforeId: 'a' })).toThrow(ValidationError)
+    expect(() => moveChecklistItem(items, 'a', { beforeId: 'zz' })).toThrow(NotFoundError)
+    expect(() => moveChecklistItem(items, 'b', { afterId: 'c', beforeId: 'a' })).not.toThrow()
+    expect(() => moveChecklistItem(items, 'a', { beforeId: 'c', afterId: 'b' })).toThrow(/adjacent/)
+  })
+
+  it('updates and removes items', () => {
+    expect(updateChecklistItem(items, 'a', { done: true })[0]).toMatchObject({ id: 'a', done: true })
+    expect(ids(removeChecklistItem(items, 'b'))).toEqual(['a', 'c'])
+    expect(() => updateChecklistItem(items, 'zz', { done: true })).toThrow(NotFoundError)
+  })
+
+  it('resets items for the next occurrence with fresh ids', () => {
+    expect(resetChecklist(items, ['x', 'y', 'z'])).toEqual([
+      { id: 'x', text: 'a', done: false, position: 1024 },
+      { id: 'y', text: 'b', done: false, position: 2048 },
+      { id: 'z', text: 'c', done: false, position: 3072 },
+    ])
+  })
+
+  it('validates texts and ids', () => {
+    expect(parseChecklistTexts([' One ', '', 'Two'])).toEqual(['One', 'Two'])
+    expect(parseChecklistTexts(undefined)).toEqual([])
+    expect(() => parseChecklistTexts('One')).toThrow(ValidationError)
+    expect(() => parseChecklistTexts(['x'.repeat(501)])).toThrow(/at most/)
+    expect(parseChecklistItemId('0B6F1E2A-1C2D-4E5F-8A9B-0C1D2E3F4A5B')).toBe('0b6f1e2a-1c2d-4e5f-8a9b-0c1d2e3f4a5b')
+    expect(() => parseChecklistItemId('1')).toThrow(ValidationError)
   })
 })

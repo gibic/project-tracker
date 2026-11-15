@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useStore } from 'zustand'
 
+import type { ProjectColor } from '@/domain/projects/project'
 import type { Task } from '@/domain/tasks/task'
 
 import { createBoardStore, type BoardStore } from './boardStore'
@@ -14,14 +15,16 @@ const BoardStoreContext = createContext<BoardStoreApi | null>(null)
 /** One store per mounted board, created from server data (zustand's Next.js pattern). */
 export function BoardStoreProvider({
   projectId,
+  projectColor,
   tasks,
   children,
 }: {
   projectId: string
+  projectColor: ProjectColor
   tasks: Task[]
   children: ReactNode
 }) {
-  const [store] = useState(() => createBoardStore(projectId, tasks))
+  const [store] = useState(() => createBoardStore(projectId, projectColor, tasks))
 
   // Server actions revalidate the page; adopt the new server truth when it arrives.
   useEffect(() => {

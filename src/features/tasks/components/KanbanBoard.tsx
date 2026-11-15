@@ -5,8 +5,10 @@ import { useMemo, type DragEvent } from 'react'
 import type { ID } from '@/domain/shared/types'
 import type { Task, TaskStatus } from '@/domain/tasks/task'
 
+import { checklistProgress } from '@/domain/tasks/checklist'
 import { TASK_STATUSES } from '@/domain/tasks/task'
 import { cn } from '@/utilities/ui'
+import { ProgressBar } from '../../projects/ProgressBar'
 import { SectionHeading } from '../../shared/headings'
 import { useBoardStore } from '../BoardStoreProvider'
 import { visibleColumn } from '../boardStore'
@@ -141,6 +143,8 @@ function TaskCard({
   const startDrag = useBoardStore((s) => s.startDrag)
   const endDrag = useBoardStore((s) => s.endDrag)
   const openTask = useBoardStore((s) => s.openTask)
+  const color = useBoardStore((s) => s.projectColor)
+  const progress = useMemo(() => checklistProgress(task.checklist), [task.checklist])
 
   return (
     <button
@@ -165,6 +169,7 @@ function TaskCard({
     >
       <span className={cn('text-sm font-medium [overflow-wrap:anywhere]', task.status === 'done' && 'font-normal line-through')}>{task.title}</span>
       <TaskMeta task={task} noteCount={noteCount} />
+      {progress.total > 0 && <ProgressBar progress={progress} color={color} compact label="Checklist progress" />}
     </button>
   )
 }

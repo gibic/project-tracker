@@ -1,4 +1,5 @@
 import type { ID } from '../shared/types'
+import type { ChecklistItem } from './checklist'
 
 import { ValidationError } from '../shared/errors'
 import { oneOf, optionalText, requireText } from '../shared/validation'
@@ -28,6 +29,8 @@ export interface Task {
   dueDate: Date | null
   /** Completing a repeating task creates the next occurrence; null means it does not repeat. */
   recurrence: TaskRecurrence | null
+  /** Subtasks, sorted by position. */
+  checklist: ChecklistItem[]
   /** Sort key inside a status column. Fractional so a move only rewrites one task. */
   position: number
   completedAt: Date | null

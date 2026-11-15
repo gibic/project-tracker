@@ -1,6 +1,8 @@
 import { createStore } from 'zustand/vanilla'
 
+import type { ProjectColor } from '@/domain/projects/project'
 import type { ID } from '@/domain/shared/types'
+import type { ChecklistItem } from '@/domain/tasks/checklist'
 
 import {
   applyStatusChange,
@@ -23,6 +25,7 @@ export interface DropTarget {
 
 export interface BoardState {
   projectId: ID
+  projectColor: ProjectColor
   tasks: Task[]
   filter: BoardFilter
   editingTaskId: ID | null
@@ -44,6 +47,8 @@ export interface BoardActions {
   /** Optimistic move; mirrors the server's `moveTask` so the UI does not wait for a round trip. */
   applyMove: (taskId: ID, status: TaskStatus, position: number, now: Date) => void
   upsertTask: (task: Task) => void
+  /** Optimistic checklist change; the server's result replaces it. */
+  setChecklist: (taskId: ID, checklist: ChecklistItem[]) => void
   removeTask: (id: ID) => void
   restore: (tasks: Task[]) => void
   setError: (error: string | null) => void
@@ -51,9 +56,10 @@ export interface BoardActions {
 
 export type BoardStore = BoardState & BoardActions
 
-export const createBoardStore = (projectId: ID, tasks: Task[]) =>
+export const createBoardStore = (projectId: ID, projectColor: ProjectColor, tasks: Task[]) =>
   createStore<BoardStore>()((set) => ({
     projectId,
+    projectColor,
     tasks,
     filter: { query: '', priority: 'all' },
     editingTaskId: null,
@@ -81,6 +87,8 @@ export const createBoardStore = (projectId: ID, tasks: Task[]) =>
           ? s.tasks.map((t) => (t.id === task.id ? task : t))
           : [...s.tasks, task],
       })),
+    setChecklist: (taskId, checklist) =>
+      set((s) => ({ tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, checklist } : t)) })),
     removeTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
     restore: (tasks) => set({ tasks }),
     setError: (error) => set({ error }),

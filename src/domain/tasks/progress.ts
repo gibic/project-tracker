@@ -1,10 +1,14 @@
 import type { Task, TaskStatus } from './task'
 
-export interface Progress {
+/** How much of something is finished, e.g. a project's tasks or a task's checklist. */
+export interface Completion {
   total: number
   done: number
-  /** 0–100, rounded down so a project only shows 100 when every task is done. */
+  /** 0–100, rounded down so it only shows 100 when everything is done. */
   percent: number
+}
+
+export interface Progress extends Completion {
   byStatus: Record<TaskStatus, number>
 }
 

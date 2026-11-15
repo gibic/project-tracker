@@ -4,6 +4,7 @@ import type { NewTask, TaskFilter, TaskRepository } from '@/application/ports/re
 import type { Task } from '@/domain/tasks/task'
 import type { Task as TaskDoc } from '@/payload-types'
 
+import { sortChecklist } from '@/domain/tasks/checklist'
 import { asUser, fromDbId, isNotFound, toDate, toDbId, type RepositoryScope } from './shared'
 
 const toTask = (doc: TaskDoc): Task => ({
@@ -15,6 +16,15 @@ const toTask = (doc: TaskDoc): Task => ({
   priority: doc.priority,
   dueDate: toDate(doc.dueDate),
   recurrence: doc.recurrence ?? null,
+  checklist: sortChecklist(
+    (doc.checklist ?? []).map((item, index) => ({
+      // Payload always assigns row ids; the fallback only covers malformed rows.
+      id: item.id ?? `${doc.id}-${index}`,
+      text: item.text,
+      done: item.done ?? false,
+      position: item.position,
+    })),
+  ),
   position: doc.position,
   completedAt: toDate(doc.completedAt),
   createdAt: new Date(doc.createdAt),
@@ -22,9 +32,12 @@ const toTask = (doc: TaskDoc): Task => ({
 })
 
 const toData = (data: Partial<NewTask>) => {
-  const { projectId, dueDate, completedAt, ...rest } = data
+  const { projectId, dueDate, completedAt, checklist, ...rest } = data
   return {
     ...rest,
+    ...(checklist !== undefined && {
+      checklist: checklist.map(({ id, text, done, position }) => ({ id, text, done, position })),
+    }),
     ...(projectId !== undefined && { project: toDbId(projectId) }),
     ...(dueDate !== undefined && { dueDate: dueDate?.toISOString() ?? null }),
     ...(completedAt !== undefined && { completedAt: completedAt?.toISOString() ?? null }),

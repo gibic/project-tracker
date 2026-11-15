@@ -96,6 +96,24 @@ describe('mcp server', () => {
     expect(board.notesByTask[task.id].map((n: { title: string }) => n.title)).toEqual(['Plan'])
   })
 
+  it('edits a task checklist', async () => {
+    const { call } = setup()
+    const project = (await call('create_project', { name: 'Launch' })).data
+    const task = (await call('create_task', { projectId: project.id, title: 'Ship', checklist: ['Build'] })).data
+    const added = (await call('add_checklist_item', { taskId: task.id, text: 'Test' })).data
+    const [build, test] = added.checklist
+
+    const moved = (await call('move_checklist_item', { taskId: task.id, itemId: test.id, afterId: build.id })).data
+    expect(moved.checklist.map((i: { text: string }) => i.text)).toEqual(['Test', 'Build'])
+
+    const checked = (await call('update_checklist_item', { taskId: task.id, itemId: build.id, done: true })).data
+    expect(checked.checklist[1]).toMatchObject({ text: 'Build', done: true })
+
+    const removed = (await call('delete_checklist_item', { taskId: task.id, itemId: test.id })).data
+    expect(removed.checklist).toHaveLength(1)
+    expect((await call('delete_checklist_item', { taskId: task.id, itemId: test.id })).isError).toBe(true)
+  })
+
   it('returns business-rule failures as tool errors', async () => {
     const { call } = setup()
     const project = (await call('create_project', { name: 'Old' })).data

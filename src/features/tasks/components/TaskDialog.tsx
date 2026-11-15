@@ -19,6 +19,7 @@ import { SectionHeading } from '../../shared/headings'
 import { useBoardStore } from '../BoardStoreProvider'
 import { PRIORITY_LABELS, TASK_STATUS_LABELS } from '../labels'
 import { useTaskMutations } from '../useTaskMutations'
+import { TaskChecklist } from './TaskChecklist'
 
 export function TaskDialog({
   readOnly,
@@ -102,6 +103,8 @@ export function TaskDialog({
               </div>
             </div>
           </fieldset>
+
+          <TaskChecklist task={task} readOnly={readOnly} />
 
           <div className="flex flex-col gap-2 rounded-md border p-3">
             <div className="flex items-center justify-between">

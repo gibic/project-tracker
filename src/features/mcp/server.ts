@@ -14,10 +14,20 @@ import {
   updateProject,
 } from '@/application/projects/useCases'
 import { search } from '@/application/search/useCases'
-import { createTask, deleteTask, moveTask, updateTask } from '@/application/tasks/useCases'
+import {
+  addChecklistItem,
+  createTask,
+  deleteTask,
+  moveChecklistItem,
+  moveTask,
+  removeChecklistItem,
+  updateChecklistItem,
+  updateTask,
+} from '@/application/tasks/useCases'
 import { PROJECT_COLORS } from '@/domain/projects/project'
 import { MAX_SEARCH_LIMIT, MAX_SEARCH_QUERY, SEARCH_KINDS } from '@/domain/search/search'
 import { isDomainError } from '@/domain/shared/errors'
+import { CHECKLIST_MAX_ITEMS, CHECKLIST_TEXT_MAX } from '@/domain/tasks/checklist'
 import { TASK_RECURRENCES } from '@/domain/tasks/recurrence'
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/domain/tasks/task'
 
@@ -29,6 +39,7 @@ import { TASK_PRIORITIES, TASK_STATUSES } from '@/domain/tasks/task'
 
 const INSTRUCTIONS = `Personal project tracker and knowledge base.
 - Projects contain tasks. Task status is one of: ${TASK_STATUSES.join(', ')}. Archived projects are read-only until restored.
+- Tasks can hold an ordered checklist of subtasks ({ id, text, done }); edit it with the *_checklist_item tools.
 - Notes are markdown. Link other notes with [[Note Title]]; titles are unique (case-insensitive). Notes can reference projects and tasks by id.
 - Use search to find projects, tasks and notes by words in their title, description or body.
 - Use get_project to see a project's tasks and notes, get_dashboard for overdue / due-soon / in-progress work.`
@@ -188,6 +199,11 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
         priority: taskPriority.optional().describe('Defaults to medium'),
         dueDate: dueDate.optional(),
         recurrence: recurrence.optional().describe('Omit for a one-off task'),
+        checklist: z
+          .array(z.string().max(CHECKLIST_TEXT_MAX))
+          .max(CHECKLIST_MAX_ITEMS)
+          .optional()
+          .describe('Checklist item texts (subtasks), in order'),
       }),
       annotations: WRITE,
     },
@@ -243,6 +259,63 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
       annotations: DESTRUCTIVE,
     },
     ({ taskId }) => run(() => deleteTask(ctx, taskId)),
+  )
+
+  // Checklists (subtasks inside a task)
+
+  server.registerTool(
+    'add_checklist_item',
+    {
+      title: 'Add checklist item',
+      description: 'Adds an unchecked item to the bottom of a task checklist. Returns the task with its checklist.',
+      inputSchema: z.object({ taskId: id('Task'), text: z.string().max(CHECKLIST_TEXT_MAX) }),
+      annotations: WRITE,
+    },
+    ({ taskId, text }) => run(() => addChecklistItem(ctx, taskId, { text })),
+  )
+
+  server.registerTool(
+    'update_checklist_item',
+    {
+      title: 'Update checklist item',
+      description: 'Checks or unchecks a checklist item, or changes its text. Omitted fields keep their value.',
+      inputSchema: z.object({
+        taskId: id('Task'),
+        itemId: id('Checklist item'),
+        text: z.string().max(CHECKLIST_TEXT_MAX).optional(),
+        done: z.boolean().optional(),
+      }),
+      annotations: WRITE,
+    },
+    ({ taskId, itemId, ...patch }) => run(() => updateChecklistItem(ctx, taskId, itemId, patch)),
+  )
+
+  server.registerTool(
+    'move_checklist_item',
+    {
+      title: 'Move checklist item',
+      description:
+        'Reorders a checklist item, optionally between two adjacent items of the same task. Without neighbours it goes to the bottom.',
+      inputSchema: z.object({
+        taskId: id('Task'),
+        itemId: id('Checklist item'),
+        beforeId: id('Checklist item').optional().describe('Item that ends up directly above'),
+        afterId: id('Checklist item').optional().describe('Item that ends up directly below'),
+      }),
+      annotations: WRITE,
+    },
+    ({ taskId, itemId, ...neighbours }) => run(() => moveChecklistItem(ctx, taskId, itemId, neighbours)),
+  )
+
+  server.registerTool(
+    'delete_checklist_item',
+    {
+      title: 'Delete checklist item',
+      description: 'Removes an item from a task checklist.',
+      inputSchema: z.object({ taskId: id('Task'), itemId: id('Checklist item') }),
+      annotations: DESTRUCTIVE,
+    },
+    ({ taskId, itemId }) => run(() => removeChecklistItem(ctx, taskId, itemId)),
   )
 
   // Notes

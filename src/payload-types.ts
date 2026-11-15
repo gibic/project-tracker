@@ -164,6 +164,17 @@ export interface Task {
    * Completing the task in the workspace creates the next occurrence.
    */
   recurrence?: ('daily' | 'weekdays' | 'weekly' | 'monthly' | 'yearly') | null;
+  checklist?:
+    | {
+        done?: boolean | null;
+        text: string;
+        /**
+         * Order in the checklist; the workspace keeps it up to date.
+         */
+        position: number;
+        id?: string | null;
+      }[]
+    | null;
   position: number;
   completedAt?: string | null;
   owner: number | User;
@@ -400,6 +411,14 @@ export interface TasksSelect<T extends boolean = true> {
   priority?: T;
   dueDate?: T;
   recurrence?: T;
+  checklist?:
+    | T
+    | {
+        done?: T;
+        text?: T;
+        position?: T;
+        id?: T;
+      };
   position?: T;
   completedAt?: T;
   owner?: T;

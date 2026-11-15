@@ -6,7 +6,13 @@ import type { User } from '@/payload-types'
 
 import { createNote, getNote, listNotes } from '@/application/notes/useCases'
 import { createProject, deleteProject, getProjectBoard, listProjects } from '@/application/projects/useCases'
-import { createTask, moveTask } from '@/application/tasks/useCases'
+import {
+  addChecklistItem,
+  createTask,
+  moveChecklistItem,
+  moveTask,
+  updateChecklistItem,
+} from '@/application/tasks/useCases'
 import { NotFoundError } from '@/domain/shared/errors'
 import { createAppContext } from '@/infrastructure/container'
 import config from '@/payload.config'
@@ -74,6 +80,28 @@ describe('Payload repositories', () => {
     expect(moved.completedAt).toBeInstanceOf(Date)
     expect(board.tasks.find((t) => t.id === c.id)?.dueDate?.toISOString()).toBe('2026-12-24T12:00:00.000Z')
     expect(board.project.progress).toMatchObject({ total: 3, done: 1 })
+  })
+
+  it('stores an ordered checklist on the task', async () => {
+    const project = await createProject(alice, { name: 'Checklist' })
+    const task = await createTask(alice, { projectId: project.id, title: 'Release', checklist: ['Build', 'Test'] })
+    const [build, test] = task.checklist
+    const added = await addChecklistItem(alice, task.id, { text: 'Ship' })
+    const ship = added.checklist[2]
+
+    // A fractional position must survive the numeric column, and order must follow it.
+    await moveChecklistItem(alice, task.id, ship.id, { beforeId: build.id, afterId: test.id })
+    await updateChecklistItem(alice, task.id, build.id, { done: true })
+
+    const { tasks } = await getProjectBoard(alice, project.id)
+    const stored = tasks.find((t) => t.id === task.id)!
+    expect(stored.checklist.map((i) => [i.id, i.text, i.done])).toEqual([
+      [build.id, 'Build', true],
+      [ship.id, 'Ship', false],
+      [test.id, 'Test', false],
+    ])
+    expect(stored.checklist[1].position).toBe(1536)
+    await expect(addChecklistItem(bob, task.id, { text: 'Hijack' })).rejects.toThrow(NotFoundError)
   })
 
   it('round-trips markdown through Lexical and resolves links', async () => {

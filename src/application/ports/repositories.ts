@@ -3,6 +3,7 @@ import type { OAuthClient, OAuthGrant } from '@/domain/oauth/oauth'
 import type { Project, ProjectColor, ProjectStatus } from '@/domain/projects/project'
 import type { SearchKind } from '@/domain/search/search'
 import type { ID } from '@/domain/shared/types'
+import type { ChecklistItem } from '@/domain/tasks/checklist'
 import type { TaskRecurrence } from '@/domain/tasks/recurrence'
 import type { Task, TaskPriority, TaskStatus } from '@/domain/tasks/task'
 
@@ -33,6 +34,7 @@ export interface NewTask {
   priority: TaskPriority
   dueDate: Date | null
   recurrence: TaskRecurrence | null
+  checklist: ChecklistItem[]
   position: number
   completedAt: Date | null
 }

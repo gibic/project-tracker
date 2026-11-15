@@ -3,6 +3,7 @@ import * as migration_20261105_105231_add_user_api_keys from './20261105_105231_
 import * as migration_20261105_110738_add_oauth from './20261105_110738_add_oauth';
 import * as migration_20261115_111646_add_task_recurrence from './20261115_111646_add_task_recurrence';
 import * as migration_20261115_112652_add_search from './20261115_112652_add_search';
+import * as migration_20261115_130500_add_task_checklist from './20261115_130500_add_task_checklist';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261115_112652_add_search.up,
     down: migration_20261115_112652_add_search.down,
-    name: '20261115_112652_add_search'
+    name: '20261115_112652_add_search',
+  },
+  {
+    up: migration_20261115_130500_add_task_checklist.up,
+    down: migration_20261115_130500_add_task_checklist.down,
+    name: '20261115_130500_add_task_checklist'
   },
 ];

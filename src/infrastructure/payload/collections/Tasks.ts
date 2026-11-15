@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
+import { CHECKLIST_TEXT_MAX } from '@/domain/tasks/checklist'
 import { TASK_RECURRENCES, TASK_RECURRENCE_LABELS } from '@/domain/tasks/recurrence'
 import { TASK_PRIORITIES, TASK_STATUSES, TASK_STATUS_LABELS } from '@/domain/tasks/task'
 import { authenticated, ownedByUser } from '../access'
@@ -59,6 +60,28 @@ export const Tasks: CollectionConfig = {
       type: 'select',
       options: TASK_RECURRENCES.map((value) => ({ label: TASK_RECURRENCE_LABELS[value], value })),
       admin: { description: 'Completing the task in the workspace creates the next occurrence.' },
+    },
+    {
+      name: 'checklist',
+      type: 'array',
+      labels: { singular: 'Item', plural: 'Checklist' },
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'done', type: 'checkbox', defaultValue: false },
+            { name: 'text', type: 'text', required: true, maxLength: CHECKLIST_TEXT_MAX },
+            {
+              name: 'position',
+              type: 'number',
+              required: true,
+              defaultValue: 0,
+              admin: { description: 'Order in the checklist; the workspace keeps it up to date.' },
+            },
+          ],
+        },
+      ],
     },
     { name: 'position', type: 'number', required: true, defaultValue: 0, admin: { position: 'sidebar' } },
     { name: 'completedAt', type: 'date', admin: { position: 'sidebar', readOnly: true } },

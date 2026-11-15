@@ -5,6 +5,18 @@ import type { Task, TaskInput, TaskStatus } from '@/domain/tasks/task'
 import { assertProjectIsActive } from '@/domain/projects/project'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
 import { definedFields } from '@/domain/shared/validation'
+import {
+  addChecklistItem as addItem,
+  buildChecklist,
+  moveChecklistItem as moveItem,
+  parseChecklistItemId,
+  parseChecklistText,
+  parseChecklistTexts,
+  removeChecklistItem as removeItem,
+  resetChecklist,
+  updateChecklistItem as updateItem,
+  type ChecklistItem,
+} from '@/domain/tasks/checklist'
 import { nextDueDate } from '@/domain/tasks/recurrence'
 import {
   applyStatusChange,
@@ -14,6 +26,8 @@ import {
   validateTaskInput,
 } from '@/domain/tasks/task'
 import { requireProject } from '../projects/useCases'
+
+const newIds = (count: number): ID[] => Array.from({ length: count }, () => crypto.randomUUID())
 
 const requireTask = async (ctx: AppContext, id: ID): Promise<Task> => {
   const task = await ctx.tasks.findById(id)
@@ -42,6 +56,7 @@ const recurIfCompleted = async (ctx: AppContext, previous: TaskStatus, task: Tas
     description: task.description,
     priority: task.priority,
     recurrence: task.recurrence,
+    checklist: resetChecklist(task.checklist, newIds(task.checklist.length)),
     dueDate: nextDueDate(task.recurrence, task.dueDate, ctx.clock.now()),
     status: 'todo',
     completedAt: null,
@@ -53,6 +68,8 @@ const recurIfCompleted = async (ctx: AppContext, previous: TaskStatus, task: Tas
 export type CreateTaskInput = Partial<Record<keyof TaskInput, unknown>> & {
   projectId: ID
   status?: unknown
+  /** Checklist item texts, in order. */
+  checklist?: unknown
 }
 
 /** New tasks go to the bottom of their column. */
@@ -61,11 +78,13 @@ export const createTask = async (ctx: AppContext, input: CreateTaskInput): Promi
   assertProjectIsActive(project)
 
   const fields = validateTaskInput(input)
+  const texts = parseChecklistTexts(input.checklist)
   const status = input.status === undefined ? 'todo' : parseTaskStatus(input.status)
   const max = await ctx.tasks.maxPosition(project.id, status)
 
   const task = await ctx.tasks.create({
     ...fields,
+    checklist: buildChecklist(texts, newIds(texts.length)),
     projectId: project.id,
     position: positionBetween(max, null),
     ...applyStatusChange({ status: 'todo', completedAt: null }, status, ctx.clock.now()),
@@ -143,3 +162,59 @@ export const deleteTask = async (ctx: AppContext, id: ID): Promise<void> => {
   await ctx.notes.unlinkTasks([id])
   await ctx.tasks.delete(id)
 }
+
+// Checklist. Each change rewrites the task's item list; only the touched item's position changes.
+
+const changeChecklist = async (
+  ctx: AppContext,
+  taskId: ID,
+  change: (items: ChecklistItem[]) => ChecklistItem[],
+): Promise<Task> => {
+  const task = await requireEditableTask(ctx, taskId)
+  return ctx.tasks.update(task.id, { checklist: change(task.checklist) })
+}
+
+export interface AddChecklistItemInput {
+  text: unknown
+  /** Optional client-chosen UUID so the UI can add the item optimistically. */
+  id?: unknown
+}
+
+/** Adds an item to the bottom of the task's checklist. */
+export const addChecklistItem = async (ctx: AppContext, taskId: ID, input: AddChecklistItemInput): Promise<Task> => {
+  const text = parseChecklistText(input.text)
+  const id = input.id === undefined ? crypto.randomUUID() : parseChecklistItemId(input.id)
+  return changeChecklist(ctx, taskId, (items) => addItem(items, { id, text }))
+}
+
+export const updateChecklistItem = async (
+  ctx: AppContext,
+  taskId: ID,
+  itemId: ID,
+  input: { text?: unknown; done?: unknown },
+): Promise<Task> => {
+  const patch: { text?: string; done?: boolean } = {}
+  if (input.text !== undefined) patch.text = parseChecklistText(input.text)
+  if (input.done !== undefined) {
+    if (typeof input.done !== 'boolean') throw new ValidationError('done must be true or false', 'done')
+    patch.done = input.done
+  }
+  return changeChecklist(ctx, taskId, (items) => updateItem(items, itemId, patch))
+}
+
+export interface MoveChecklistItemInput {
+  /** Item that ends up directly above the moved item; omit for the top. */
+  beforeId?: ID | null
+  /** Item that ends up directly below the moved item; omit for the bottom. */
+  afterId?: ID | null
+}
+
+export const moveChecklistItem = (
+  ctx: AppContext,
+  taskId: ID,
+  itemId: ID,
+  input: MoveChecklistItemInput,
+): Promise<Task> => changeChecklist(ctx, taskId, (items) => moveItem(items, itemId, input))
+
+export const removeChecklistItem = (ctx: AppContext, taskId: ID, itemId: ID): Promise<Task> =>
+  changeChecklist(ctx, taskId, (items) => removeItem(items, itemId))

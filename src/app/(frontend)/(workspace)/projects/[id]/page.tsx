@@ -55,7 +55,7 @@ export default async function ProjectPage({ params }: Props) {
       />
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
-        <BoardStoreProvider projectId={project.id} tasks={tasks}>
+        <BoardStoreProvider projectId={project.id} projectColor={project.color} tasks={tasks}>
           <TaskBoard readOnly={readOnly} notesByTask={notesByTask} />
           <Suspense>
             <OpenTaskFromUrl />
