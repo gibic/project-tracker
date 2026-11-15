@@ -74,6 +74,22 @@ const tableConverters: HTMLConverters = {
   },
 }
 
+const escapeHtml = (text: string) =>
+  text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)
+
+type CodeBlockNode = SerializedLexicalNode & { fields: { code?: string | null; language?: string | null } }
+
+// Fenced ``` blocks become <pre><code class="language-x">; the default converters have none for blocks.
+const blockConverters: HTMLConverters = {
+  blocks: {
+    Code: ({ node }) => {
+      const { code, language } = (node as CodeBlockNode).fields
+      const lang = language && /^[\w-]+$/.test(language) ? ` class="language-${language}"` : ''
+      return `<pre><code${lang}>${escapeHtml(code ?? '')}</code></pre>`
+    },
+  },
+}
+
 export const createRichTextRenderer = (config: SanitizedConfig): RichTextRenderer => ({
   // The default HTML converters escape text nodes, so user content cannot inject markup.
   async toHtml(markdown) {
@@ -81,7 +97,7 @@ export const createRichTextRenderer = (config: SanitizedConfig): RichTextRendere
     return convertLexicalToHTML({
       data: await markdownToLexical(config, markdown),
       disableContainer: true,
-      converters: ({ defaultConverters }) => ({ ...defaultConverters, ...tableConverters }),
+      converters: ({ defaultConverters }) => ({ ...defaultConverters, ...tableConverters, ...blockConverters }),
     })
   },
 })

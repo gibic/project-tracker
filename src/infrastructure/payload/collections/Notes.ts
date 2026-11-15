@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { titleKey } from '@/domain/notes/note'
 import { authenticated, ownedByUser } from '../access'
+import { noteLexical } from '../editor'
 import { ownerField } from '../fields/owner'
 
 export const Notes: CollectionConfig = {
@@ -29,8 +30,7 @@ export const Notes: CollectionConfig = {
         beforeChange: [({ siblingData }) => (siblingData.title ? titleKey(siblingData.title) : undefined)],
       },
     },
-    // Uses the config-level editor (src/infrastructure/payload/editor.ts).
-    { name: 'content', type: 'richText' },
+    { name: 'content', type: 'richText', editor: noteLexical },
     {
       name: 'tags',
       type: 'text',

@@ -37,13 +37,19 @@ const decode = (text: string) =>
  */
 const linkify = (html: string, links: WikiLink[]): string => {
   const byKey = new Map(links.map((link) => [titleKey(link.title), link]))
-  return html.replace(/\[\[([^\[\]<]+?)\]\]/g, (match, escapedTitle: string) => {
-    const link = byKey.get(titleKey(decode(escapedTitle)))
-    if (!link) return match
-    return link.noteId
-      ? `<a href="/notes/${encodeURIComponent(link.noteId)}" class="wiki-link">${escapedTitle}</a>`
-      : `<a href="/notes/new?title=${encodeURIComponent(link.title)}" class="wiki-link wiki-link-missing" title="Create this note">${escapedTitle}</a>`
-  })
+  const linkifyText = (text: string) =>
+    text.replace(/\[\[([^\[\]<]+?)\]\]/g, (match, escapedTitle: string) => {
+      const link = byKey.get(titleKey(decode(escapedTitle)))
+      if (!link) return match
+      return link.noteId
+        ? `<a href="/notes/${encodeURIComponent(link.noteId)}" class="wiki-link">${escapedTitle}</a>`
+        : `<a href="/notes/new?title=${encodeURIComponent(link.title)}" class="wiki-link wiki-link-missing" title="Create this note">${escapedTitle}</a>`
+    })
+  // Code blocks render literally, so `[[...]]` inside them stays text.
+  return html
+    .split(/(<pre>[\s\S]*?<\/pre>)/)
+    .map((part) => (part.startsWith('<pre>') ? part : linkifyText(part)))
+    .join('')
 }
 
 const tableParts: Record<string, ElementType> = {
@@ -65,6 +71,20 @@ const parserOptions: HTMLReactParserOptions = {
       return (
         <div className="not-prose my-6 overflow-hidden rounded-md border">
           <Table>{children()}</Table>
+        </div>
+      )
+    }
+    if (node.name === 'pre') {
+      const code = node.children.find((child) => child instanceof Element && child.name === 'code')
+      const language = code instanceof Element ? /language-([\w-]+)/.exec(code.attribs.class ?? '')?.[1] : undefined
+      return (
+        <div className="not-prose my-6 overflow-hidden rounded-md border bg-muted/50">
+          {language && (
+            <div className="border-b px-4 py-1.5 font-mono text-xs text-muted-foreground">{language}</div>
+          )}
+          <pre className="overflow-x-auto p-4 font-mono text-[0.8125rem] leading-relaxed">
+            {code instanceof Element ? domToReact(code.children as DOMNode[]) : children()}
+          </pre>
         </div>
       )
     }

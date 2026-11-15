@@ -22,4 +22,19 @@ describe('rich text conversion', () => {
     expect(markdown).toContain('| Column | Type |')
     expect(markdown).toContain('| note | text |')
   })
+
+  const code = 'Before\n\n```ts\nconst a = 1 < 2 && "[[Not a link]]"\n\nreturn a\n```\n\nAfter'
+
+  it('renders fenced code blocks as escaped <pre><code>', async () => {
+    const sanitized = await config
+    const html = await createRichTextRenderer(sanitized).toHtml(code)
+    expect(html).toContain('<pre><code class="language-ts">const a = 1 &#60; 2 &#38;&#38; &#34;[[Not a link]]&#34;\n\nreturn a</code></pre>')
+    expect(html).toContain('After')
+  })
+
+  it('round-trips fenced code blocks', async () => {
+    const sanitized = await config
+    const markdown = await lexicalToMarkdown(sanitized, await markdownToLexical(sanitized, code))
+    expect(markdown).toContain('```ts\nconst a = 1 < 2 && "[[Not a link]]"\n\nreturn a\n```')
+  })
 })

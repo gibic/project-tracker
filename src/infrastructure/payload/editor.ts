@@ -1,7 +1,9 @@
 import {
   BlockquoteFeature,
+  BlocksFeature,
   BoldFeature,
   ChecklistFeature,
+  CodeBlock,
   EXPERIMENTAL_TableFeature,
   FixedToolbarFeature,
   HeadingFeature,
@@ -36,8 +38,19 @@ export const noteEditorFeatures = [
   BlockquoteFeature(),
   HorizontalRuleFeature(),
   EXPERIMENTAL_TableFeature(),
+  // Fenced ``` code blocks; the premade block ships its own markdown transformer.
+  BlocksFeature({ blocks: [CodeBlock()] }),
   FixedToolbarFeature(),
   InlineToolbarFeature(),
 ]
 
-export const defaultLexical = lexicalEditor({ features: noteEditorFeatures })
+/*
+ * The config-level editor cannot hold BlocksFeature: block fields are sanitized against the
+ * config-level editor, so config loading waits on itself and never settles. It stays a plain
+ * editor and the notes field sets `noteLexical` explicitly.
+ */
+export const defaultLexical = lexicalEditor({
+  features: noteEditorFeatures.filter((feature) => feature.key !== 'blocks'),
+})
+
+export const noteLexical = lexicalEditor({ features: noteEditorFeatures })
