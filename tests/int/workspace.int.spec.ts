@@ -106,4 +106,25 @@ describe('Payload repositories', () => {
     await deleteProject(alice, project.id)
     expect((await getNote(alice, source.id)).note.projectIds).toEqual([])
   })
+
+  it('saves fenced code blocks with any language tag', async () => {
+    const body = [
+      'Intro',
+      '',
+      '```',
+      'plain',
+      '```',
+      '',
+      '```js',
+      'const a = 1 * 2 // [[Not a link]]',
+      '```',
+      '',
+      '```bash',
+      '# a comment, not a heading',
+      'echo "$HOME"',
+      '```',
+    ].join('\n')
+    const note = await createNote(alice, { title: `Code ${suffix}`, body })
+    expect((await getNote(alice, note.id)).note.body).toBe(body)
+  })
 })
