@@ -114,7 +114,7 @@ export function NoteHtml({
     <div
       className={cn(
         'prose prose-sm max-w-none dark:prose-invert prose-code:before:content-none prose-code:after:content-none',
-        '[&_.wiki-link]:font-medium [&_.wiki-link]:text-sky-700 [&_.wiki-link]:no-underline dark:[&_.wiki-link]:text-sky-400 [&_.wiki-link-missing]:border-b [&_.wiki-link-missing]:border-dashed [&_.wiki-link-missing]:opacity-70',
+        '[&_.wiki-link]:font-medium [&_.wiki-link]:text-link [&_.wiki-link]:no-underline [&_.wiki-link-missing]:border-b [&_.wiki-link-missing]:border-dashed [&_.wiki-link-missing]:opacity-70',
         '[&_.not-prose_a:not(.wiki-link)]:underline [&_.not-prose_a:not(.wiki-link)]:underline-offset-4',
         className,
       )}
