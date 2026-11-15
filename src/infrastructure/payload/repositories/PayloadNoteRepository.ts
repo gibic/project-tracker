@@ -30,6 +30,7 @@ const toSummary = (doc: Omit<NoteDoc, 'content'>): NoteSummary => ({
 
 const toWhere = (filter: NoteFilter): Where => {
   const and: Where[] = []
+  if (filter.ids) and.push({ id: { in: filter.ids.map(toDbId) } })
   if (filter.search) and.push({ title: { like: filter.search } })
   if (filter.tag) and.push({ tags: { in: [filter.tag] } })
   if (filter.projectId) and.push({ projects: { in: [toDbId(filter.projectId)] } })
@@ -76,7 +77,7 @@ export const createPayloadNoteRepository = (scope: RepositoryScope): NoteReposit
 
   return {
     async list(filter = {}) {
-      if (filter.taskIds?.length === 0) return []
+      if (filter.taskIds?.length === 0 || filter.ids?.length === 0) return []
       const { docs } = await payload.find({
         collection: 'notes',
         where: toWhere(filter),

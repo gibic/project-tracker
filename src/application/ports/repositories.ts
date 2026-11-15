@@ -1,6 +1,7 @@
 import type { Note, NoteSummary } from '@/domain/notes/note'
 import type { OAuthClient, OAuthGrant } from '@/domain/oauth/oauth'
 import type { Project, ProjectColor, ProjectStatus } from '@/domain/projects/project'
+import type { SearchKind } from '@/domain/search/search'
 import type { ID } from '@/domain/shared/types'
 import type { TaskRecurrence } from '@/domain/tasks/recurrence'
 import type { Task, TaskPriority, TaskStatus } from '@/domain/tasks/task'
@@ -68,6 +69,7 @@ export interface NewNote {
 }
 
 export interface NoteFilter {
+  ids?: ID[]
   /** Case-insensitive match on the title. */
   search?: string
   tag?: string
@@ -89,6 +91,31 @@ export interface NoteRepository {
   /** Removes a project or task id from every note that references it. */
   unlinkProject(projectId: ID): Promise<void>
   unlinkTasks(taskIds: ID[]): Promise<void>
+}
+
+export interface SearchQuery {
+  /** Lowercase word terms from `parseSearchTerms`; every term must match a word prefix. */
+  terms: string[]
+  kinds: SearchKind[]
+  /** Maximum hits per kind. */
+  limit: number
+}
+
+export interface SearchHit {
+  kind: SearchKind
+  id: ID
+  /** Higher is better. Only comparable within one kind. */
+  rank: number
+  /** Plain-text excerpt of the description or note body around the match; may be empty. */
+  snippet: string
+}
+
+/**
+ * Full-text search over titles, descriptions and note bodies, scoped to the signed-in user.
+ * Titles rank above body text. Hits are ordered best first within each kind.
+ */
+export interface SearchRepository {
+  search(query: SearchQuery): Promise<SearchHit[]>
 }
 
 export type NewOAuthClient = Omit<OAuthClient, 'id' | 'createdAt'>

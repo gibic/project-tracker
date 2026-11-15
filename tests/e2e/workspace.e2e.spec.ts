@@ -58,6 +58,29 @@ test.describe('Workspace', () => {
     await expect(page.getByText('1/2 done')).toBeVisible()
   })
 
+  test('searches and creates tasks from the command palette', async () => {
+    const palette = page.getByRole('dialog', { name: 'Command palette' })
+
+    // Full-text hit on a task opens it on its project board.
+    await page.goto(`${baseURL}/notes`)
+    await page.keyboard.press('ControlOrMeta+k')
+    await palette.getByRole('combobox').fill('shi')
+    await palette.getByRole('option', { name: /Ship it/ }).click()
+    await expect(page.getByRole('heading', { name: projectName })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: 'Edit task' }).getByLabel('Title')).toHaveValue('Ship it')
+    await page.getByRole('dialog', { name: 'Edit task' }).getByRole('button', { name: 'Close' }).click()
+
+    // Quick action: "new task in <project>", then type the title.
+    await page.getByRole('button', { name: /Search…/ }).click()
+    await palette.getByRole('combobox').fill(`new task in ${projectName}`)
+    await palette.getByRole('option', { name: `New task in ${projectName}`, exact: true }).click()
+    await palette.getByRole('combobox').fill('Added from palette')
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('dialog', { name: 'Edit task' }).getByLabel('Title')).toHaveValue('Added from palette')
+    await page.getByRole('dialog', { name: 'Edit task' }).getByRole('button', { name: 'Close' }).click()
+    await expect(page.getByRole('region', { name: 'To do' }).getByText('Added from palette')).toBeVisible()
+  })
+
   test('writes notes linked with [[wiki links]]', async () => {
     await page.goto(`${baseURL}/notes/new`)
     await page.getByLabel('Title').fill(noteTitle)

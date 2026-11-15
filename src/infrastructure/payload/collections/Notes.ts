@@ -4,6 +4,7 @@ import { titleKey } from '@/domain/notes/note'
 import { authenticated, ownedByUser } from '../access'
 import { noteLexical } from '../editor'
 import { ownerField } from '../fields/owner'
+import { lexicalToMarkdown, type LexicalState } from '../richText'
 
 export const Notes: CollectionConfig = {
   slug: 'notes',
@@ -31,6 +32,21 @@ export const Notes: CollectionConfig = {
       },
     },
     { name: 'content', type: 'richText', editor: noteLexical },
+    {
+      // Markdown copy of `content` that feeds the full-text index (see search/schema.ts).
+      // Derived in a hook so admin edits stay searchable too.
+      name: 'searchText',
+      type: 'textarea',
+      admin: { hidden: true },
+      hooks: {
+        beforeChange: [
+          async ({ siblingData, value, req }) =>
+            siblingData.content === undefined
+              ? value
+              : lexicalToMarkdown(req.payload.config, siblingData.content as LexicalState | null),
+        ],
+      },
+    },
     {
       name: 'tags',
       type: 'text',

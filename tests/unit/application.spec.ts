@@ -9,6 +9,7 @@ import {
   setProjectArchived,
   updateProject,
 } from '@/application/projects/useCases'
+import { search } from '@/application/search/useCases'
 import { createTask, deleteTask, moveTask, updateTask } from '@/application/tasks/useCases'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
 import { createInMemoryContext } from './inMemoryContext'
@@ -215,5 +216,33 @@ describe('dashboard', () => {
     expect(dashboard.dueSoon.map((t) => t.title)).toEqual(['Soon'])
     expect(dashboard.totals).toEqual({ openTasks: 2, doneThisWeek: 1, notes: 1 })
     expect(dashboard.projects[0].progress.percent).toBe(33)
+  })
+})
+
+describe('search', () => {
+  it('returns projects, tasks with their project, and notes per kind', async () => {
+    const { ctx, project } = await setup()
+    const task = await createTask(ctx, { projectId: project.id, title: 'Launch checklist', description: 'Print flyers' })
+    const note = await createNote(ctx, { title: 'Retro', body: 'The launch went well' })
+    await createTask(ctx, { projectId: project.id, title: 'Unrelated' })
+
+    const results = await search(ctx, { query: 'laun' })
+    expect(results.projects.map((r) => r.project.id)).toEqual([project.id])
+    expect(results.tasks).toEqual([
+      { task, project: { id: project.id, name: 'Launch', color: 'sky', status: 'active' }, snippet: 'Print flyers' },
+    ])
+    expect(results.notes.map((r) => r.note.id)).toEqual([note.id])
+    expect(results.notes[0].note).not.toHaveProperty('body')
+  })
+
+  it('filters by kind, limits per kind and ignores empty queries', async () => {
+    const { ctx, project } = await setup()
+    for (const title of ['Launch A', 'Launch B', 'Launch C']) await createTask(ctx, { projectId: project.id, title })
+
+    const tasksOnly = await search(ctx, { query: 'launch', kinds: ['task'], limit: 2 })
+    expect(tasksOnly.projects).toEqual([])
+    expect(tasksOnly.tasks).toHaveLength(2)
+    expect(await search(ctx, { query: '  ?! ' })).toEqual({ projects: [], tasks: [], notes: [] })
+    await expect(search(ctx, { query: 'x', limit: 500 })).rejects.toThrow(ValidationError)
   })
 })

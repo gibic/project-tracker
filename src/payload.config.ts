@@ -10,6 +10,7 @@ import { Projects } from './infrastructure/payload/collections/Projects'
 import { Tasks } from './infrastructure/payload/collections/Tasks'
 import { Users } from './infrastructure/payload/collections/Users'
 import { defaultLexical } from './infrastructure/payload/editor'
+import { searchSchemaHook } from './infrastructure/payload/search/schema'
 import { migrations } from './migrations'
 import { getServerSideURL } from './utilities/getURL'
 
@@ -26,6 +27,7 @@ export default buildConfig({
   editor: defaultLexical,
   db: postgresAdapter({
     prodMigrations: migrations,
+    afterSchemaInit: [searchSchemaHook],
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },

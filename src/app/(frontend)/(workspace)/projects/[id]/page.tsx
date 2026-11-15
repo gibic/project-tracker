@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { NotebookPenIcon, PlusIcon } from 'lucide-react'
 import Link from 'next/link'
-import { cache } from 'react'
+import { cache, Suspense } from 'react'
 
 import { getProjectBoard } from '@/application/projects/useCases'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +13,7 @@ import { PageHeader } from '@/features/shared/PageHeader'
 import { SectionHeading } from '@/features/shared/headings'
 import { loadOrNotFound } from '@/features/shared/server'
 import { BoardStoreProvider } from '@/features/tasks/BoardStoreProvider'
+import { OpenTaskFromUrl } from '@/features/tasks/OpenTaskFromUrl'
 import { TaskBoard } from '@/features/tasks/components/TaskBoard'
 import { cn } from '@/utilities/ui'
 
@@ -56,6 +57,9 @@ export default async function ProjectPage({ params }: Props) {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <BoardStoreProvider projectId={project.id} tasks={tasks}>
           <TaskBoard readOnly={readOnly} notesByTask={notesByTask} />
+          <Suspense>
+            <OpenTaskFromUrl />
+          </Suspense>
         </BoardStoreProvider>
 
         <aside className="flex flex-col gap-3">

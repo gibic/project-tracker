@@ -224,6 +224,7 @@ export interface Note {
     };
     [k: string]: unknown;
   } | null;
+  searchText?: string | null;
   /**
    * Lowercase, kebab-case.
    */
@@ -413,6 +414,7 @@ export interface NotesSelect<T extends boolean = true> {
   title?: T;
   titleKey?: T;
   content?: T;
+  searchText?: T;
   tags?: T;
   projects?: T;
   tasks?: T;

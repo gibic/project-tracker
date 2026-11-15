@@ -1,9 +1,18 @@
 'use client'
 
-import { FolderKanbanIcon, LayoutDashboardIcon, LogOutIcon, MenuIcon, NotebookPenIcon, SettingsIcon, XIcon } from 'lucide-react'
+import {
+  FolderKanbanIcon,
+  LayoutDashboardIcon,
+  LogOutIcon,
+  MenuIcon,
+  NotebookPenIcon,
+  SearchIcon,
+  SettingsIcon,
+  XIcon,
+} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Suspense, use, useEffect } from 'react'
+import { Suspense, use, useEffect, useSyncExternalStore } from 'react'
 
 import type { Project } from '@/domain/projects/project'
 
@@ -70,10 +79,27 @@ function ProjectLinksSkeleton() {
   )
 }
 
+const noSubscribe = () => () => {}
+
+/** "⌘K" on Apple platforms, "Ctrl K" elsewhere. The server render assumes ⌘. */
+function PaletteShortcut() {
+  const mac = useSyncExternalStore(
+    noSubscribe,
+    () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent),
+    () => true,
+  )
+  return (
+    <kbd className="ml-auto rounded border bg-background px-1.5 font-sans text-[0.7rem] text-muted-foreground">
+      {mac ? '⌘K' : 'Ctrl K'}
+    </kbd>
+  )
+}
+
 export function Sidebar({ projects, userLabel }: { projects: Promise<SidebarProject[]>; userLabel: string }) {
   const pathname = usePathname()
   const navOpen = useUIStore((s) => s.navOpen)
   const setNavOpen = useUIStore((s) => s.setNavOpen)
+  const setPaletteOpen = useUIStore((s) => s.setPaletteOpen)
 
   // Persisted preferences load after mount to keep SSR and first client render identical.
   useEffect(() => {
@@ -89,6 +115,9 @@ export function Sidebar({ projects, userLabel }: { projects: Promise<SidebarProj
           <MenuIcon />
         </Button>
         <span className="font-semibold">Workspace</span>
+        <Button variant="ghost" size="icon" className="ml-auto" aria-label="Search" onClick={() => setPaletteOpen(true)}>
+          <SearchIcon />
+        </Button>
       </div>
 
       {navOpen && (
@@ -108,6 +137,18 @@ export function Sidebar({ projects, userLabel }: { projects: Promise<SidebarProj
           <Button variant="ghost" size="icon" className="md:hidden" aria-label="Close navigation" onClick={() => setNavOpen(false)}>
             <XIcon />
           </Button>
+        </div>
+
+        <div className="px-2 pb-2">
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="flex w-full items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <SearchIcon className="size-4" />
+            Search…
+            <PaletteShortcut />
+          </button>
         </div>
 
         <nav className="flex flex-col gap-0.5 px-2">

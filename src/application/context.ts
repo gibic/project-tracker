@@ -1,4 +1,10 @@
-import type { NoteRepository, OAuthRepository, ProjectRepository, TaskRepository } from './ports/repositories'
+import type {
+  NoteRepository,
+  OAuthRepository,
+  ProjectRepository,
+  SearchRepository,
+  TaskRepository,
+} from './ports/repositories'
 import type { Clock, OAuthCrypto, RichTextRenderer } from './ports/services'
 
 /**
@@ -9,6 +15,7 @@ export interface AppContext {
   projects: ProjectRepository
   tasks: TaskRepository
   notes: NoteRepository
+  search: SearchRepository
   richText: RichTextRenderer
   clock: Clock
 }

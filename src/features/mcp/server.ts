@@ -13,8 +13,10 @@ import {
   setProjectArchived,
   updateProject,
 } from '@/application/projects/useCases'
+import { search } from '@/application/search/useCases'
 import { createTask, deleteTask, moveTask, updateTask } from '@/application/tasks/useCases'
 import { PROJECT_COLORS } from '@/domain/projects/project'
+import { MAX_SEARCH_LIMIT, MAX_SEARCH_QUERY, SEARCH_KINDS } from '@/domain/search/search'
 import { isDomainError } from '@/domain/shared/errors'
 import { TASK_RECURRENCES } from '@/domain/tasks/recurrence'
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/domain/tasks/task'
@@ -28,6 +30,7 @@ import { TASK_PRIORITIES, TASK_STATUSES } from '@/domain/tasks/task'
 const INSTRUCTIONS = `Personal project tracker and knowledge base.
 - Projects contain tasks. Task status is one of: ${TASK_STATUSES.join(', ')}. Archived projects are read-only until restored.
 - Notes are markdown. Link other notes with [[Note Title]]; titles are unique (case-insensitive). Notes can reference projects and tasks by id.
+- Use search to find projects, tasks and notes by words in their title, description or body.
 - Use get_project to see a project's tasks and notes, get_dashboard for overdue / due-soon / in-progress work.`
 
 const id = (entity: string) => z.string().min(1).describe(`${entity} id`)
@@ -71,6 +74,27 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
       annotations: READ,
     },
     () => run(() => getDashboard(ctx)),
+  )
+
+  // Search
+
+  server.registerTool(
+    'search',
+    {
+      title: 'Search',
+      description:
+        'Full-text search over project names and descriptions, task titles and descriptions, and note titles ' +
+        'and markdown bodies. Every word must match the start of a word (English stemming, so "plans" finds ' +
+        '"planning"); title matches rank first. Returns up to `limit` results per kind with a short snippet. ' +
+        'Includes archived projects and their tasks. Use get_note / get_project for full content.',
+      inputSchema: z.object({
+        query: z.string().min(1).max(MAX_SEARCH_QUERY),
+        kinds: z.array(z.enum(SEARCH_KINDS)).optional().describe('Limit to these kinds; defaults to all'),
+        limit: z.number().int().min(1).max(MAX_SEARCH_LIMIT).optional().describe('Results per kind; defaults to 10'),
+      }),
+      annotations: READ,
+    },
+    (input) => run(() => search(ctx, input)),
   )
 
   // Projects

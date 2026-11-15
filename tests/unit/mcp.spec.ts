@@ -52,8 +52,24 @@ describe('mcp server', () => {
     const { result } = await rpc('tools/list')
     const names = result.tools.map((t: { name: string }) => t.name)
     expect(names).toEqual(
-      expect.arrayContaining(['create_project', 'create_task', 'move_task', 'create_note', 'update_note', 'get_dashboard']),
+      expect.arrayContaining(['create_project', 'create_task', 'move_task', 'create_note', 'update_note', 'get_dashboard', 'search']),
     )
+  })
+
+  it('searches projects, tasks and notes', async () => {
+    const { call } = setup()
+    const project = (await call('create_project', { name: 'Launch' })).data
+    await call('create_task', { projectId: project.id, title: 'Launch party' })
+    await call('create_note', { title: 'Ideas', body: 'Launch on a Tuesday' })
+
+    const all = (await call('search', { query: 'launch' })).data
+    expect(all.projects).toHaveLength(1)
+    expect(all.tasks[0]).toMatchObject({ task: { title: 'Launch party' }, project: { name: 'Launch' } })
+    expect(all.notes[0].note.title).toBe('Ideas')
+
+    const notes = (await call('search', { query: 'launch', kinds: ['note'] })).data
+    expect(notes).toMatchObject({ projects: [], tasks: [] })
+    expect((await call('search', { query: 'launch', kinds: ['people'] })).isError).toBe(true)
   })
 
   it('creates a project, tasks and a linked note', async () => {

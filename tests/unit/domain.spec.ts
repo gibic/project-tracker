@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { deriveLinkKeys, extractWikiLinks, normalizeTags, validateNoteInput } from '@/domain/notes/note'
 import { validateProjectInput } from '@/domain/projects/project'
+import { matchesSearchTerms, parseSearchKinds, parseSearchLimit, parseSearchTerms } from '@/domain/search/search'
 import { ValidationError } from '@/domain/shared/errors'
 import { computeProgress } from '@/domain/tasks/progress'
 import { nextDueDate, parseRecurrence } from '@/domain/tasks/recurrence'
@@ -163,5 +164,31 @@ describe('notes', () => {
       projectIds: ['1', '2'],
       taskIds: [],
     })
+  })
+})
+
+describe('search', () => {
+  it('splits queries into unique lowercase word terms without query syntax', () => {
+    expect(parseSearchTerms('  Launch-PLAN & launch:* | !draft  ')).toEqual(['launch', 'plan', 'draft'])
+    expect(parseSearchTerms('Café über 2026')).toEqual(['café', 'über', '2026'])
+    expect(parseSearchTerms('&|!():*')).toEqual([])
+    expect(parseSearchTerms('a b c d e f g h i j')).toHaveLength(8)
+  })
+
+  it('validates kinds and limit', () => {
+    expect(parseSearchKinds(undefined)).toEqual(['project', 'task', 'note'])
+    expect(parseSearchKinds(['note', 'project'])).toEqual(['project', 'note'])
+    expect(() => parseSearchKinds(['people'])).toThrow(ValidationError)
+    expect(parseSearchLimit(undefined)).toBe(10)
+    expect(parseSearchLimit('5')).toBe(5)
+    expect(() => parseSearchLimit(0)).toThrow(ValidationError)
+    expect(() => parseSearchLimit(51)).toThrow(ValidationError)
+  })
+
+  it('matches when every term prefixes a word', () => {
+    expect(matchesSearchTerms('Launch plan for Q4', ['lau', 'pla'])).toBe(true)
+    expect(matchesSearchTerms('Launch plan for Q4', ['aunch'])).toBe(false)
+    expect(matchesSearchTerms('Launch plan for Q4', ['lau', 'zzz'])).toBe(false)
+    expect(matchesSearchTerms('anything', [])).toBe(false)
   })
 })

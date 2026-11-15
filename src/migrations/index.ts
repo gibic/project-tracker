@@ -2,6 +2,7 @@ import * as migration_20261022_143807_initial from './20261022_143807_initial';
 import * as migration_20261105_105231_add_user_api_keys from './20261105_105231_add_user_api_keys';
 import * as migration_20261105_110738_add_oauth from './20261105_110738_add_oauth';
 import * as migration_20261115_111646_add_task_recurrence from './20261115_111646_add_task_recurrence';
+import * as migration_20261115_112652_add_search from './20261115_112652_add_search';
 
 export const migrations = [
   {
@@ -22,6 +23,11 @@ export const migrations = [
   {
     up: migration_20261115_111646_add_task_recurrence.up,
     down: migration_20261115_111646_add_task_recurrence.down,
-    name: '20261115_111646_add_task_recurrence'
+    name: '20261115_111646_add_task_recurrence',
+  },
+  {
+    up: migration_20261115_112652_add_search.up,
+    down: migration_20261115_112652_add_search.down,
+    name: '20261115_112652_add_search'
   },
 ];

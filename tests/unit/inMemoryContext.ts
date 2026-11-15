@@ -2,6 +2,8 @@ import type { AppContext } from '@/application/context'
 import type {
   NoteRepository,
   ProjectRepository,
+  SearchHit,
+  SearchRepository,
   TaskRepository,
 } from '@/application/ports/repositories'
 import type { Note } from '@/domain/notes/note'
@@ -9,6 +11,7 @@ import type { Project } from '@/domain/projects/project'
 import type { Task } from '@/domain/tasks/task'
 
 import { titleKey } from '@/domain/notes/note'
+import { matchesSearchTerms, type SearchKind } from '@/domain/search/search'
 
 /** In-memory adapters for the application ports. Same contracts as the Payload ones, no database. */
 export const createInMemoryContext = (now = new Date('2026-10-21T09:00:00.000Z')) => {
@@ -93,6 +96,7 @@ export const createInMemoryContext = (now = new Date('2026-10-21T09:00:00.000Z')
       return [...notes.values()]
         .filter(
           (n) =>
+            (!filter.ids || filter.ids.includes(n.id)) &&
             (!filter.search || n.title.toLowerCase().includes(filter.search.toLowerCase())) &&
             (!filter.tag || n.tags.includes(filter.tag)) &&
             (!filter.projectId || n.projectIds.includes(filter.projectId)) &&
@@ -130,10 +134,30 @@ export const createInMemoryContext = (now = new Date('2026-10-21T09:00:00.000Z')
     },
   }
 
+  /** Prefix matching like the Postgres adapter; a title match ranks above a body match. */
+  const searchRepo: SearchRepository = {
+    async search({ terms, kinds, limit }) {
+      const documents: Record<SearchKind, { id: string; title: string; text: string; updatedAt: Date }[]> = {
+        project: [...projects.values()].map((p) => ({ ...p, title: p.name, text: p.description })),
+        task: [...tasks.values()].map((t) => ({ ...t, text: t.description })),
+        note: [...notes.values()].map((n) => ({ ...n, text: n.body })),
+      }
+      return kinds.flatMap((kind) =>
+        documents[kind]
+          .filter((d) => matchesSearchTerms(`${d.title} ${d.text}`, terms))
+          .map((d) => ({ doc: d, rank: matchesSearchTerms(d.title, terms) ? 2 : 1 }))
+          .sort((a, b) => b.rank - a.rank || b.doc.updatedAt.getTime() - a.doc.updatedAt.getTime())
+          .slice(0, limit)
+          .map(({ doc, rank }): SearchHit => ({ kind, id: doc.id, rank, snippet: doc.text.slice(0, 120) })),
+      )
+    },
+  }
+
   const ctx: AppContext = {
     projects: projectRepo,
     tasks: taskRepo,
     notes: noteRepo,
+    search: searchRepo,
     richText: { toHtml: async (markdown) => `<p>${markdown}</p>` },
     clock: { now: () => new Date(clock.current) },
   }
