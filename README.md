@@ -46,6 +46,8 @@ To run the app in Docker as well, use `docker-compose up` instead. The app conta
 
 The code is split into layers. Dependencies only point inward, and ESLint (`eslint.config.mjs`) fails the lint when a file imports across a boundary it should not.
 
+New to the code? [docs/understanding-the-codebase.md](docs/understanding-the-codebase.md) is a beginner walkthrough of the layers, a reading order, and one feature traced end to end.
+
 ```
 src/
   domain/            Business rules. Entities, validation, task ordering, due-date and
