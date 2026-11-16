@@ -11,7 +11,7 @@ shadcn/ui: components in `src/components/ui`, `cn` helper in `src/utilities/ui.t
 - `pnpm lint` (also enforces layer boundaries), `pnpm typecheck`.
 - `pnpm generate:types` after any collection/field change. `pnpm generate:importmap` after adding/moving admin components or editor features.
 - `pnpm test:unit` (domain + application, in-memory adapters, no DB), `pnpm test:int` (real Payload + Postgres; single test: `pnpm test:int <file> -t "<name>"`), `pnpm test:e2e` (playwright; starts or reuses `pnpm dev`; reads `E2E_BASE_URL`). `pnpm test` runs all three.
-- `pnpm payload migrate:create` / `pnpm payload migrate`: migrations are required for deploys.
+- `pnpm payload migrate:create` / `pnpm payload migrate`: migrations are required for deploys. There is no `prodMigrations`; on Vercel, `vercel-build` (`scripts/vercel-build.mjs`) runs `payload migrate` once per Production build (unpooled URL), and on Preview only with `PREVIEW_MIGRATIONS=true` (set it only when Preview has its own database). Keep migrations backward compatible: the previous deployment serves traffic until the new one is promoted.
 
 Int/e2e tests and dev mode write to `DATABASE_URL`: use a throwaway DB (e.g. `.../learnpayload_test`), never production. Int files run serially (parallel schema pushes race). E2E creates/deletes a `dev@payloadcms.com` user and its documents (`tests/helpers/seedUser.ts`).
 

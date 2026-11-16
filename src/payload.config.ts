@@ -12,7 +12,6 @@ import { Tasks } from './infrastructure/payload/collections/Tasks'
 import { Users } from './infrastructure/payload/collections/Users'
 import { defaultLexical } from './infrastructure/payload/editor'
 import { searchSchemaHook } from './infrastructure/payload/search/schema'
-import { migrations } from './migrations'
 import { getServerSideURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
@@ -27,7 +26,7 @@ export default buildConfig({
   },
   editor: defaultLexical,
   db: postgresAdapter({
-    prodMigrations: migrations,
+    // No `prodMigrations`: migrations run once per deployment in scripts/vercel-build.mjs.
     afterSchemaInit: [searchSchemaHook],
     pool: {
       // On Vercel this must be Neon's pooled (`-pooler`) URL: every function instance keeps its own pool.

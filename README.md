@@ -165,4 +165,6 @@ pnpm start
 
 The app deploys like any other Next.js application (VPS, Docker, Coolify, and similar). See the [Payload deployment docs](https://payloadcms.com/docs/production/deployment).
 
+On Vercel, the `vercel-build` script (`scripts/vercel-build.mjs`) runs `payload migrate` before `next build` on Production deployments, using `DATABASE_URL_UNPOOLED` when it is set. A failed migration fails the build, so the deployment is not promoted. Preview deployments skip migrations unless `PREVIEW_MIGRATIONS=true`; set it only when Preview has its own database (for example a Neon branch per preview), never when it shares the production `DATABASE_URL`.
+
 On Vercel, set `DATABASE_URL` to Neon's pooled connection string (the host contains `-pooler`; the Neon integration sets it by default). Every function instance keeps its own small pool (5 connections, `DATABASE_POOL_MAX`), and `attachDatabasePool` from `@vercel/functions` closes idle connections before Fluid compute suspends an instance.
