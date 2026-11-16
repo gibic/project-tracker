@@ -62,6 +62,18 @@ describe('tasks', () => {
     expect(moved.completedAt).toEqual(ctx.clock.now())
   })
 
+  it('moves a task to the end of its own column when no neighbours are given', async () => {
+    const { ctx, project } = await setup()
+    const a = await createTask(ctx, { projectId: project.id, title: 'A' })
+    await createTask(ctx, { projectId: project.id, title: 'B' })
+    await moveTask(ctx, { taskId: a.id, status: 'todo' })
+    const last = await moveTask(ctx, { taskId: a.id, status: 'todo' })
+
+    const { tasks } = await getProjectBoard(ctx, project.id)
+    expect(tasks.map((t) => t.title)).toEqual(['B', 'A'])
+    expect(last.id).toBe(a.id)
+  })
+
   it('rejects neighbours from another column', async () => {
     const { ctx, project } = await setup()
     const a = await createTask(ctx, { projectId: project.id, title: 'A' })

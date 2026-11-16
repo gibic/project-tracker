@@ -23,6 +23,9 @@ export const Tasks: CollectionConfig = {
     defaultColumns: ['title', 'project', 'status', 'priority', 'dueDate'],
     group: 'Workspace',
   },
+  // Board queries read one column of one project: by position (board order, `maxPosition`)
+  // or by newest completion (the done column's limit). Done history makes these columns large.
+  indexes: [{ fields: ['project', 'status', 'position'] }, { fields: ['project', 'status', 'completedAt'] }],
   fields: [
     { name: 'title', type: 'text', required: true, maxLength: 200 },
     { name: 'description', type: 'textarea' },

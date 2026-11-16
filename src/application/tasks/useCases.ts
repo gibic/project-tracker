@@ -20,7 +20,6 @@ import {
 import { nextDueDate } from '@/domain/tasks/recurrence'
 import {
   applyStatusChange,
-  compareByPosition,
   parseTaskStatus,
   positionBetween,
   validateTaskInput,
@@ -143,11 +142,10 @@ export const moveTask = async (ctx: AppContext, input: MoveTaskInput): Promise<T
   if (before || after) {
     position = positionBetween(before?.position, after?.position)
   } else {
-    // Dropped on an empty area: append to the end of the column.
-    const column = (await ctx.tasks.listSummaries({ projectId: task.projectId, status }))
-      .filter((t) => t.id !== task.id)
-      .sort(compareByPosition)
-    position = positionBetween(column.at(-1)?.position, null)
+    // No neighbours (empty drop area, list-view checkbox, agents): append to the end of the column.
+    // One indexed lookup instead of loading the column, which for `done` holds all history.
+    // If the task is already last in this column, the max is its own position; it stays last.
+    position = positionBetween(await ctx.tasks.maxPosition(task.projectId, status), null)
   }
 
   const moved = await ctx.tasks.update(task.id, { ...applyStatusChange(task, status, ctx.clock.now()), position })
