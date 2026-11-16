@@ -162,3 +162,5 @@ pnpm start
 ```
 
 The app deploys like any other Next.js application (VPS, Docker, Coolify, and similar). See the [Payload deployment docs](https://payloadcms.com/docs/production/deployment).
+
+On Vercel, set `DATABASE_URL` to Neon's pooled connection string (the host contains `-pooler`; the Neon integration sets it by default). Every function instance keeps its own small pool (5 connections, `DATABASE_POOL_MAX`), and `attachDatabasePool` from `@vercel/functions` closes idle connections before Fluid compute suspends an instance.

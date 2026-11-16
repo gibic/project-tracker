@@ -1,4 +1,5 @@
-import { postgresAdapter } from '@payloadcms/db-postgres'
+import { postgresAdapter, type PostgresAdapter } from '@payloadcms/db-postgres'
+import { attachDatabasePool } from '@vercel/functions'
 import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
@@ -29,9 +30,20 @@ export default buildConfig({
     prodMigrations: migrations,
     afterSchemaInit: [searchSchemaHook],
     pool: {
+      // On Vercel this must be Neon's pooled (`-pooler`) URL: every function instance keeps its own pool.
       connectionString: process.env.DATABASE_URL || '',
+      // Payload keeps one client checked out for the pool's lifetime, so usable slots are max - 1. Keep max >= 3.
+      max: Number(process.env.DATABASE_POOL_MAX) || 5,
+      idleTimeoutMillis: 5_000,
+      // Fail fast when the pool is exhausted instead of hanging until the function times out.
+      connectionTimeoutMillis: 10_000,
     },
   }),
+  // Fluid compute suspends idle instances; this keeps them alive just long enough to close idle connections.
+  // It only acts inside the Vercel runtime, so local dev, the CLI and tests are unaffected.
+  onInit: (payload) => {
+    if (process.env.VERCEL) attachDatabasePool((payload.db as unknown as PostgresAdapter).pool)
+  },
   collections: [Projects, Tasks, Notes, Users, OAuthClients, OAuthGrants],
   cors: [getServerSideURL()].filter(Boolean),
   secret: process.env.PAYLOAD_SECRET,
