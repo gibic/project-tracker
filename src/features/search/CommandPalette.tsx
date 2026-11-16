@@ -72,7 +72,9 @@ const STATUS_ICON: Record<TaskStatus, LucideIcon> = {
   done: CircleCheckIcon,
 }
 
-const taskHref = (projectId: string, taskId: string) => `/projects/${projectId}?task=${taskId}`
+/** Done tasks may be older than the board's done limit, so their links load every done task. */
+const taskHref = (projectId: string, taskId: string, status?: TaskStatus) =>
+  `/projects/${projectId}?task=${taskId}${status === 'done' ? '&done=all' : ''}`
 
 /** Opens with ⌘K / Ctrl+K anywhere in the workspace, or from the sidebar search button. */
 export function CommandPalette({ projects }: { projects: Promise<PaletteProject[]> }) {
@@ -404,7 +406,7 @@ function SearchResultGroups({
           {tasks.map((task) => {
             const Icon = STATUS_ICON[task.status]
             return (
-              <CommandItem key={task.id} value={`task-${task.id}`} onSelect={() => go(taskHref(task.project.id, task.id))}>
+              <CommandItem key={task.id} value={`task-${task.id}`} onSelect={() => go(taskHref(task.project.id, task.id, task.status))}>
                 <Icon aria-label={TASK_STATUS_LABELS[task.status]} />
                 <ResultText title={task.title} snippet={task.snippet} done={task.status === 'done'} />
                 <CommandShortcut className="flex max-w-[40%] items-center gap-1.5 tracking-normal">

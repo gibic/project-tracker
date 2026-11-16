@@ -5,7 +5,7 @@ import type { SearchKind } from '@/domain/search/search'
 import type { ID } from '@/domain/shared/types'
 import type { ChecklistItem } from '@/domain/tasks/checklist'
 import type { TaskRecurrence } from '@/domain/tasks/recurrence'
-import type { Task, TaskPriority, TaskStatus } from '@/domain/tasks/task'
+import type { Task, TaskPriority, TaskStatus, TaskSummary } from '@/domain/tasks/task'
 
 /*
  * Persistence ports. The application layer depends only on these interfaces;
@@ -48,10 +48,22 @@ export interface TaskFilter {
   excludeStatus?: TaskStatus
   /** Only tasks with a due date strictly before this moment. */
   dueBefore?: Date
+  /** `newest` sorts by `completedAt` descending instead of board position. */
+  completedOrder?: 'newest'
+  /** Maximum number of tasks; all matching tasks when omitted. */
+  limit?: number
 }
+
+export type StatusCounts = Record<TaskStatus, number>
 
 export interface TaskRepository {
   list(filter?: TaskFilter): Promise<Task[]>
+  /** Like `list`, without `description` and `checklist`. Use it for lists that can grow without bound. */
+  listSummaries(filter?: TaskFilter): Promise<TaskSummary[]>
+  /** Task counts per status, keyed by project id. Projects without tasks are absent. */
+  countByStatus(projectIds: ID[]): Promise<Record<ID, StatusCounts>>
+  /** Number of tasks in these projects completed at or after `since`. */
+  countCompletedSince(projectIds: ID[], since: Date): Promise<number>
   findById(id: ID): Promise<Task | null>
   /** Highest position in a project column, or null when the column is empty. */
   maxPosition(projectId: ID, status: TaskStatus): Promise<number | null>

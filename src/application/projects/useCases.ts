@@ -7,7 +7,7 @@ import type { Task } from '@/domain/tasks/task'
 import { validateProjectInput } from '@/domain/projects/project'
 import { NotFoundError } from '@/domain/shared/errors'
 import { definedFields } from '@/domain/shared/validation'
-import { computeProgress, type Progress } from '@/domain/tasks/progress'
+import { progressFromCounts, type Progress } from '@/domain/tasks/progress'
 import { compareByPosition } from '@/domain/tasks/task'
 
 export interface ProjectWithProgress extends Project {
@@ -26,11 +26,9 @@ export const listProjects = async (
 ): Promise<ProjectWithProgress[]> => {
   const projects = await ctx.projects.list(includeArchived ? {} : { status: 'active' })
   if (projects.length === 0) return []
-  const tasks = await ctx.tasks.list({ projectIds: projects.map((p) => p.id) })
-  return projects.map((project) => ({
-    ...project,
-    progress: computeProgress(tasks.filter((t) => t.projectId === project.id)),
-  }))
+  // Counts only: loading the tasks themselves would include every done task ever.
+  const counts = await ctx.tasks.countByStatus(projects.map((p) => p.id))
+  return projects.map((project) => ({ ...project, progress: progressFromCounts(counts[project.id] ?? {}) }))
 }
 
 export const createProject = async (
@@ -56,42 +54,66 @@ export const setProjectArchived = async (ctx: AppContext, id: ID, archived: bool
 /** Deletes the project and its tasks, and detaches notes that referenced either. Notes are kept. */
 export const deleteProject = async (ctx: AppContext, id: ID): Promise<void> => {
   await requireProject(ctx, id)
-  const tasks = await ctx.tasks.list({ projectId: id })
+  const tasks = await ctx.tasks.listSummaries({ projectId: id })
   await ctx.notes.unlinkTasks(tasks.map((t) => t.id))
   await ctx.notes.unlinkProject(id)
   await ctx.tasks.deleteByProject(id)
   await ctx.projects.delete(id)
 }
 
+/** The board shows only the most recently completed done tasks; older ones load on request. */
+export const BOARD_DONE_LIMIT = 50
+
 export interface ProjectBoard {
   project: ProjectWithProgress
+  /** Open tasks, plus the newest `BOARD_DONE_LIMIT` done tasks unless `allDone` was requested. In board order. */
   tasks: Task[]
+  /** Done tasks left out of `tasks`. */
+  hiddenDoneCount: number
   /** Notes attached to the project itself. */
   notes: NoteSummary[]
   /** Notes attached to individual tasks, keyed by task id. */
   notesByTask: Record<ID, NoteSummary[]>
 }
 
-export const getProjectBoard = async (ctx: AppContext, id: ID): Promise<ProjectBoard> => {
+export const getProjectBoard = async (
+  ctx: AppContext,
+  id: ID,
+  { allDone = false }: { allDone?: boolean } = {},
+): Promise<ProjectBoard> => {
   const project = await requireProject(ctx, id)
-  const tasks = (await ctx.tasks.list({ projectId: id })).sort(compareByPosition)
+  const [open, done, counts] = await Promise.all([
+    ctx.tasks.list({ projectId: id, excludeStatus: 'done' }),
+    ctx.tasks.list({
+      projectId: id,
+      status: 'done',
+      completedOrder: 'newest',
+      limit: allDone ? undefined : BOARD_DONE_LIMIT,
+    }),
+    ctx.tasks.countByStatus([id]),
+  ])
+  const tasks = [...open, ...done].sort(compareByPosition)
+  const progress = progressFromCounts(counts[id] ?? {})
+
   const taskIds = tasks.map((t) => t.id)
   const [projectNotes, taskNotes] = await Promise.all([
     ctx.notes.list({ projectId: id }),
     taskIds.length ? ctx.notes.list({ taskIds }) : Promise.resolve([]),
   ])
 
+  const visible = new Set(taskIds)
   const notesByTask: Record<ID, NoteSummary[]> = {}
   for (const note of taskNotes) {
     for (const taskId of note.taskIds) {
-      if (!taskIds.includes(taskId)) continue
+      if (!visible.has(taskId)) continue
       ;(notesByTask[taskId] ??= []).push(note)
     }
   }
 
   return {
-    project: { ...project, progress: computeProgress(tasks) },
+    project: { ...project, progress },
     tasks,
+    hiddenDoneCount: Math.max(0, progress.byStatus.done - done.length),
     notes: projectNotes,
     notesByTask,
   }

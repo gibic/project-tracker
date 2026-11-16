@@ -12,10 +12,19 @@ import { useBoardStore } from '../BoardStoreProvider'
 import { visibleColumn } from '../boardStore'
 import { TASK_STATUS_LABELS } from '../labels'
 import { useTaskMutations } from '../useTaskMutations'
+import { HiddenDoneNotice } from './HiddenDoneNotice'
 import { TaskMeta } from './TaskMeta'
 
 /** Compact list grouped by status, open tasks sorted by urgency. */
-export function TaskList({ readOnly, noteCounts }: { readOnly: boolean; noteCounts: Record<ID, number> }) {
+export function TaskList({
+  readOnly,
+  noteCounts,
+  hiddenDoneCount,
+}: {
+  readOnly: boolean
+  noteCounts: Record<ID, number>
+  hiddenDoneCount: number
+}) {
   const tasks = useBoardStore((s) => s.tasks)
   const filter = useBoardStore((s) => s.filter)
   const openTask = useBoardStore((s) => s.openTask)
@@ -68,6 +77,7 @@ export function TaskList({ readOnly, noteCounts }: { readOnly: boolean; noteCoun
               ))}
             </ul>
           )}
+          {status === 'done' && <HiddenDoneNotice count={hiddenDoneCount} />}
         </section>
       ))}
     </div>

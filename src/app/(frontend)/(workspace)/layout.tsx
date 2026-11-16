@@ -1,6 +1,5 @@
 import React from 'react'
 
-import { listProjects } from '@/application/projects/useCases'
 import { CommandPalette } from '@/features/search/CommandPalette'
 import { getAppContext, requireUser } from '@/features/shared/server'
 import { Sidebar } from '@/features/shell/Sidebar'
@@ -11,8 +10,9 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   const user = await requireUser()
   // Not awaited: the sidebar (and the palette's "new task in" actions) stream the project list
   // so the page shell renders immediately.
+  // Only names and colors are shown, so no tasks or progress are loaded here.
   const projects = getAppContext()
-    .then((ctx) => listProjects(ctx))
+    .then((ctx) => ctx.projects.list({ status: 'active' }))
     .then((list) => list.map(({ id, name, color }) => ({ id, name, color })))
 
   return (

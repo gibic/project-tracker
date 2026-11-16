@@ -17,20 +17,27 @@ import { OpenTaskFromUrl } from '@/features/tasks/OpenTaskFromUrl'
 import { TaskBoard } from '@/features/tasks/components/TaskBoard'
 import { cn } from '@/utilities/ui'
 
-type Props = { params: Promise<{ id: string }> }
+type Props = {
+  params: Promise<{ id: string }>
+  /** `done=all` shows every done task instead of only the newest ones. */
+  searchParams: Promise<{ done?: string | string[] }>
+}
 
 // Shared by generateMetadata and the page within one request.
-const loadBoard = cache((id: string) => loadOrNotFound((ctx) => getProjectBoard(ctx, id)))
+const loadBoard = cache((id: string, allDone: boolean) => loadOrNotFound((ctx) => getProjectBoard(ctx, id, { allDone })))
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
-  const { project } = await loadBoard(id)
+const readArgs = async ({ params, searchParams }: Props) => {
+  const [{ id }, { done }] = await Promise.all([params, searchParams])
+  return [id, done === 'all'] as const
+}
+
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const { project } = await loadBoard(...(await readArgs(props)))
   return { title: project.name }
 }
 
-export default async function ProjectPage({ params }: Props) {
-  const { id } = await params
-  const { project, tasks, notes, notesByTask } = await loadBoard(id)
+export default async function ProjectPage(props: Props) {
+  const { project, tasks, hiddenDoneCount, notes, notesByTask } = await loadBoard(...(await readArgs(props)))
   const readOnly = project.status === 'archived'
 
   return (
@@ -56,7 +63,7 @@ export default async function ProjectPage({ params }: Props) {
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <BoardStoreProvider projectId={project.id} projectColor={project.color} tasks={tasks}>
-          <TaskBoard readOnly={readOnly} notesByTask={notesByTask} />
+          <TaskBoard readOnly={readOnly} notesByTask={notesByTask} hiddenDoneCount={hiddenDoneCount} />
           <Suspense>
             <OpenTaskFromUrl />
           </Suspense>

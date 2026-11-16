@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react'
 import type { Note } from '@/domain/notes/note'
 import type { Project } from '@/domain/projects/project'
 import type { ID } from '@/domain/shared/types'
-import type { Task } from '@/domain/tasks/task'
+import type { TaskSummary } from '@/domain/tasks/task'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,7 +19,7 @@ import { NoteHtml } from './NoteHtml'
 export interface NoteEditorProps {
   note?: Note
   projects: Project[]
-  tasks: Task[]
+  tasks: TaskSummary[]
   defaults?: { title?: string; projectIds?: ID[]; taskIds?: ID[] }
 }
 

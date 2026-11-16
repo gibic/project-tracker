@@ -20,7 +20,16 @@ import { TaskDialog } from './TaskDialog'
 import { TaskList } from './TaskList'
 
 /** Client root of a project's task area. Must be rendered inside `BoardStoreProvider`. */
-export function TaskBoard({ readOnly, notesByTask }: { readOnly: boolean; notesByTask: Record<ID, NoteSummary[]> }) {
+export function TaskBoard({
+  readOnly,
+  notesByTask,
+  hiddenDoneCount,
+}: {
+  readOnly: boolean
+  notesByTask: Record<ID, NoteSummary[]>
+  /** Done tasks the server left out; shown as a "Show all" link under the done tasks. */
+  hiddenDoneCount: number
+}) {
   const view = useUIStore((s) => s.projectView)
   const setView = useUIStore((s) => s.setProjectView)
   const filter = useBoardStore((s) => s.filter)
@@ -94,9 +103,9 @@ export function TaskBoard({ readOnly, notesByTask }: { readOnly: boolean; notesB
       )}
 
       {view === 'board' ? (
-        <KanbanBoard readOnly={readOnly} noteCounts={noteCounts} />
+        <KanbanBoard readOnly={readOnly} noteCounts={noteCounts} hiddenDoneCount={hiddenDoneCount} />
       ) : (
-        <TaskList readOnly={readOnly} noteCounts={noteCounts} />
+        <TaskList readOnly={readOnly} noteCounts={noteCounts} hiddenDoneCount={hiddenDoneCount} />
       )}
 
       <TaskDialog readOnly={readOnly} notesByTask={notesByTask} />

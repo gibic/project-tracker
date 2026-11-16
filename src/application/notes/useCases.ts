@@ -2,7 +2,7 @@ import type { AppContext } from '../context'
 import type { Note, NoteInput, NoteSummary } from '@/domain/notes/note'
 import type { Project } from '@/domain/projects/project'
 import type { ID } from '@/domain/shared/types'
-import type { Task } from '@/domain/tasks/task'
+import type { Task, TaskSummary } from '@/domain/tasks/task'
 
 import { deriveLinkKeys, extractWikiLinks, titleKey, validateNoteInput } from '@/domain/notes/note'
 import { NotFoundError, ValidationError } from '@/domain/shared/errors'
@@ -24,7 +24,7 @@ const assertTitleIsFree = async (ctx: AppContext, title: string, selfId?: ID): P
 const ownedReferences = async (ctx: AppContext, input: NoteInput) => {
   const [projects, tasks] = await Promise.all([
     input.projectIds.length ? ctx.projects.list() : Promise.resolve([]),
-    input.taskIds.length ? ctx.tasks.list({ ids: input.taskIds }) : Promise.resolve([]),
+    input.taskIds.length ? ctx.tasks.listSummaries({ ids: input.taskIds }) : Promise.resolve([]),
   ])
   const projectIds = new Set(projects.map((p) => p.id))
   return {
@@ -125,14 +125,14 @@ export const getNote = async (ctx: AppContext, id: ID): Promise<NoteDetail> => {
 export interface NoteEditorOptions {
   projects: Project[]
   /** Open tasks of active projects, plus any task already linked to the note. */
-  tasks: Task[]
+  tasks: TaskSummary[]
 }
 
 export const getNoteEditorOptions = async (ctx: AppContext, linkedTaskIds: ID[] = []): Promise<NoteEditorOptions> => {
   const projects = await ctx.projects.list({ status: 'active' })
   const [open, linked] = await Promise.all([
-    ctx.tasks.list({ projectIds: projects.map((p) => p.id), excludeStatus: 'done' }),
-    linkedTaskIds.length ? ctx.tasks.list({ ids: linkedTaskIds }) : Promise.resolve([]),
+    ctx.tasks.listSummaries({ projectIds: projects.map((p) => p.id), excludeStatus: 'done' }),
+    linkedTaskIds.length ? ctx.tasks.listSummaries({ ids: linkedTaskIds }) : Promise.resolve([]),
   ])
   const tasks = [...open, ...linked.filter((t) => !open.some((o) => o.id === t.id))]
   return { projects, tasks }

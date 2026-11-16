@@ -4,6 +4,8 @@ import type {
   ProjectRepository,
   SearchHit,
   SearchRepository,
+  StatusCounts,
+  TaskFilter,
   TaskRepository,
 } from '@/application/ports/repositories'
 import type { Note } from '@/domain/notes/note'
@@ -11,6 +13,7 @@ import type { Project } from '@/domain/projects/project'
 import type { Task } from '@/domain/tasks/task'
 
 import { titleKey } from '@/domain/notes/note'
+import { emptyStatusCounts } from '@/domain/tasks/progress'
 import { matchesSearchTerms, type SearchKind } from '@/domain/search/search'
 
 /** In-memory adapters for the application ports. Same contracts as the Payload ones, no database. */
@@ -48,19 +51,43 @@ export const createInMemoryContext = (now = new Date('2026-10-21T09:00:00.000Z')
     },
   }
 
+  const listTasks = (filter: TaskFilter): Task[] => {
+    const matching = [...tasks.values()]
+      .filter(
+        (t) =>
+          (!filter.projectId || t.projectId === filter.projectId) &&
+          (!filter.projectIds || filter.projectIds.includes(t.projectId)) &&
+          (!filter.ids || filter.ids.includes(t.id)) &&
+          (!filter.status || t.status === filter.status) &&
+          (!filter.excludeStatus || t.status !== filter.excludeStatus) &&
+          (!filter.dueBefore || (t.dueDate !== null && t.dueDate < filter.dueBefore)),
+      )
+      .sort((a, b) =>
+        filter.completedOrder === 'newest'
+          ? (b.completedAt?.getTime() ?? 0) - (a.completedAt?.getTime() ?? 0) || a.position - b.position
+          : a.position - b.position,
+      )
+    return filter.limit === undefined ? matching : matching.slice(0, filter.limit)
+  }
+
   const taskRepo: TaskRepository = {
     async list(filter = {}) {
-      return [...tasks.values()]
-        .filter(
-          (t) =>
-            (!filter.projectId || t.projectId === filter.projectId) &&
-            (!filter.projectIds || filter.projectIds.includes(t.projectId)) &&
-            (!filter.ids || filter.ids.includes(t.id)) &&
-            (!filter.status || t.status === filter.status) &&
-            (!filter.excludeStatus || t.status !== filter.excludeStatus) &&
-            (!filter.dueBefore || (t.dueDate !== null && t.dueDate < filter.dueBefore)),
-        )
-        .sort((a, b) => a.position - b.position)
+      return listTasks(filter)
+    },
+    async listSummaries(filter = {}) {
+      return listTasks(filter).map(({ description: _description, checklist: _checklist, ...summary }) => summary)
+    },
+    async countByStatus(projectIds) {
+      const counts: Record<string, StatusCounts> = {}
+      for (const t of tasks.values()) {
+        if (projectIds.includes(t.projectId)) (counts[t.projectId] ??= emptyStatusCounts())[t.status] += 1
+      }
+      return counts
+    },
+    async countCompletedSince(projectIds, since) {
+      return [...tasks.values()].filter(
+        (t) => projectIds.includes(t.projectId) && t.completedAt !== null && t.completedAt >= since,
+      ).length
     },
     async findById(id) {
       return tasks.get(id) ?? null

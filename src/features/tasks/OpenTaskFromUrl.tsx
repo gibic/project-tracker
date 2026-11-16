@@ -10,7 +10,8 @@ import { useBoardStoreApi } from './BoardStoreProvider'
  * parameter so closing the dialog does not reopen it and the same link works again later.
  */
 export function OpenTaskFromUrl() {
-  const taskId = useSearchParams().get('task')
+  const searchParams = useSearchParams()
+  const taskId = searchParams.get('task')
   const store = useBoardStoreApi()
   const router = useRouter()
   const pathname = usePathname()
@@ -20,8 +21,12 @@ export function OpenTaskFromUrl() {
     // No existence check: a task created just before navigating reaches the store in the
     // provider's sync effect, which runs after this one. The dialog shows once it is there.
     store.getState().openTask(taskId)
-    router.replace(pathname, { scroll: false })
-  }, [taskId, store, router, pathname])
+    // Keep other parameters: `done=all` must survive, or an old done task would drop off the board.
+    const rest = new URLSearchParams(searchParams)
+    rest.delete('task')
+    const query = rest.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }, [taskId, searchParams, store, router, pathname])
 
   return null
 }

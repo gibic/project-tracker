@@ -144,7 +144,7 @@ export const moveTask = async (ctx: AppContext, input: MoveTaskInput): Promise<T
     position = positionBetween(before?.position, after?.position)
   } else {
     // Dropped on an empty area: append to the end of the column.
-    const column = (await ctx.tasks.list({ projectId: task.projectId, status }))
+    const column = (await ctx.tasks.listSummaries({ projectId: task.projectId, status }))
       .filter((t) => t.id !== task.id)
       .sort(compareByPosition)
     position = positionBetween(column.at(-1)?.position, null)

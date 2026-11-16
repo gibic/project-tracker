@@ -1,21 +1,32 @@
+import type { PostgresAdapter } from '@payloadcms/db-postgres'
 import type { Where } from 'payload'
 
-import type { NewTask, TaskFilter, TaskRepository } from '@/application/ports/repositories'
-import type { Task } from '@/domain/tasks/task'
+import type { NewTask, StatusCounts, TaskFilter, TaskRepository } from '@/application/ports/repositories'
+import type { Task, TaskStatus, TaskSummary } from '@/domain/tasks/task'
 import type { Task as TaskDoc } from '@/payload-types'
 
+import { sql } from '@payloadcms/db-postgres'
 import { sortChecklist } from '@/domain/tasks/checklist'
+import { emptyStatusCounts } from '@/domain/tasks/progress'
 import { asUser, fromDbId, isNotFound, toDate, toDbId, type RepositoryScope } from './shared'
 
-const toTask = (doc: TaskDoc): Task => ({
+const toTaskSummary = (doc: Omit<TaskDoc, 'description' | 'checklist'>): TaskSummary => ({
   id: fromDbId(doc.id),
   projectId: fromDbId(doc.project),
   title: doc.title,
-  description: doc.description ?? '',
   status: doc.status,
   priority: doc.priority,
   dueDate: toDate(doc.dueDate),
   recurrence: doc.recurrence ?? null,
+  position: doc.position,
+  completedAt: toDate(doc.completedAt),
+  createdAt: new Date(doc.createdAt),
+  updatedAt: new Date(doc.updatedAt),
+})
+
+const toTask = (doc: TaskDoc): Task => ({
+  ...toTaskSummary(doc),
+  description: doc.description ?? '',
   checklist: sortChecklist(
     (doc.checklist ?? []).map((item, index) => ({
       // Payload always assigns row ids; the fallback only covers malformed rows.
@@ -25,11 +36,27 @@ const toTask = (doc: TaskDoc): Task => ({
       position: item.position,
     })),
   ),
-  position: doc.position,
-  completedAt: toDate(doc.completedAt),
-  createdAt: new Date(doc.createdAt),
-  updatedAt: new Date(doc.updatedAt),
 })
+
+// The checklist is a separate table; leaving it out of `select` also skips its join.
+const summarySelect = { description: false, checklist: false } as const
+
+const isEmptyFilter = (filter: TaskFilter) => filter.ids?.length === 0 || filter.projectIds?.length === 0
+
+/** Board order by default; `completedOrder: 'newest'` lists the latest completions first. */
+const findOptions = (filter: TaskFilter) => ({
+  where: toWhere(filter),
+  sort: filter.completedOrder === 'newest' ? ['-completedAt', 'position'] : 'position',
+  // With pagination off, Payload honours `limit` and skips the count query; undefined means all.
+  limit: filter.limit,
+  pagination: false as const,
+})
+
+interface StatusCountRow extends Record<string, unknown> {
+  project_id: number
+  status: TaskStatus
+  count: number
+}
 
 const toData = (data: Partial<NewTask>) => {
   const { projectId, dueDate, completedAt, checklist, ...rest } = data
@@ -60,15 +87,61 @@ export const createPayloadTaskRepository = (scope: RepositoryScope): TaskReposit
 
   return {
     async list(filter = {}) {
-      if (filter.ids?.length === 0 || filter.projectIds?.length === 0) return []
+      if (isEmptyFilter(filter)) return []
+      const { docs } = await payload.find({ collection: 'tasks', ...findOptions(filter), ...asUser(scope) })
+      return docs.map(toTask)
+    },
+
+    async listSummaries(filter = {}) {
+      if (isEmptyFilter(filter)) return []
       const { docs } = await payload.find({
         collection: 'tasks',
-        where: toWhere(filter),
-        sort: 'position',
-        pagination: false,
+        ...findOptions(filter),
+        select: summarySelect,
         ...asUser(scope),
       })
-      return docs.map(toTask)
+      return docs.map((doc) => toTaskSummary(doc as TaskDoc))
+    },
+
+    /*
+     * Payload has no GROUP BY, and counting through `find` returns one row per task, done history
+     * included. Raw SQL skips access control, so it filters on `owner_id` itself (like search).
+     */
+    async countByStatus(projectIds) {
+      const ids = projectIds.map(toDbId).filter((id) => id > 0)
+      if (ids.length === 0) return {}
+      const db = (payload.db as unknown as PostgresAdapter).drizzle
+      const { rows } = await db.execute<StatusCountRow>(sql`
+        SELECT project_id, status, count(*)::int AS count
+        FROM tasks
+        WHERE owner_id = ${scope.user.id}
+          AND project_id IN (${sql.join(
+            ids.map((id) => sql`${id}`),
+            sql`, `,
+          )})
+        GROUP BY project_id, status
+      `)
+      const counts: Record<string, StatusCounts> = {}
+      for (const row of rows) {
+        const key = fromDbId(row.project_id)
+        ;(counts[key] ??= emptyStatusCounts())[row.status] = Number(row.count)
+      }
+      return counts
+    },
+
+    async countCompletedSince(projectIds, since) {
+      if (projectIds.length === 0) return 0
+      const { totalDocs } = await payload.count({
+        collection: 'tasks',
+        where: {
+          and: [
+            { project: { in: projectIds.map(toDbId) } },
+            { completedAt: { greater_than_equal: since.toISOString() } },
+          ],
+        },
+        ...asUser(scope),
+      })
+      return totalDocs
     },
 
     async findById(id) {

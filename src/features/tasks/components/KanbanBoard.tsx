@@ -14,19 +14,28 @@ import { useBoardStore } from '../BoardStoreProvider'
 import { visibleColumn } from '../boardStore'
 import { TASK_STATUS_LABELS } from '../labels'
 import { useTaskMutations } from '../useTaskMutations'
+import { HiddenDoneNotice } from './HiddenDoneNotice'
 import { TaskMeta } from './TaskMeta'
 
 export function KanbanBoard({
   readOnly,
   noteCounts,
+  hiddenDoneCount,
 }: {
   readOnly: boolean
   noteCounts: Record<ID, number>
+  hiddenDoneCount: number
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {TASK_STATUSES.map((status) => (
-        <Column key={status} status={status} readOnly={readOnly} noteCounts={noteCounts} />
+        <Column
+          key={status}
+          status={status}
+          readOnly={readOnly}
+          noteCounts={noteCounts}
+          hiddenCount={status === 'done' ? hiddenDoneCount : 0}
+        />
       ))}
     </div>
   )
@@ -36,10 +45,13 @@ function Column({
   status,
   readOnly,
   noteCounts,
+  hiddenCount,
 }: {
   status: TaskStatus
   readOnly: boolean
   noteCounts: Record<ID, number>
+  /** Tasks of this column the server did not send. */
+  hiddenCount: number
 }) {
   const tasks = useBoardStore((s) => s.tasks)
   const filter = useBoardStore((s) => s.filter)
@@ -122,6 +134,7 @@ function Column({
           {readOnly ? 'Empty' : 'Drop tasks here'}
         </p>
       )}
+      <HiddenDoneNotice count={hiddenCount} />
     </section>
   )
 }

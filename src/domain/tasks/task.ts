@@ -38,6 +38,9 @@ export interface Task {
   updatedAt: Date
 }
 
+/** A task without its heavy fields, for lists that can grow without bound. */
+export type TaskSummary = Omit<Task, 'description' | 'checklist'>
+
 export interface TaskInput {
   title: string
   description: string
@@ -102,7 +105,9 @@ export const isDueSoon = (task: Pick<Task, 'status' | 'dueDate'>, now: Date, day
 }
 
 /** Most urgent first: higher priority, then earlier due date, then board order. */
-export const compareByUrgency = (a: Task, b: Task): number => {
+type UrgencyFields = Pick<Task, 'priority' | 'dueDate' | 'position'>
+
+export const compareByUrgency = (a: UrgencyFields, b: UrgencyFields): number => {
   const byPriority = PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority]
   if (byPriority !== 0) return byPriority
   const aDue = a.dueDate?.getTime() ?? Number.POSITIVE_INFINITY

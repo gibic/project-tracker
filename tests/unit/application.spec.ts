@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { getDashboard } from '@/application/dashboard/getDashboard'
 import { createNote, getNote, listTags, updateNote } from '@/application/notes/useCases'
 import {
+  BOARD_DONE_LIMIT,
   createProject,
   deleteProject,
   getProjectBoard,
+  listProjects,
   setProjectArchived,
   updateProject,
 } from '@/application/projects/useCases'
@@ -263,6 +265,53 @@ describe('notes', () => {
   })
 })
 
+describe('done history', () => {
+  const setupHistory = async () => {
+    const env = await setup()
+    const { ctx, clock, project } = env
+    await createTask(ctx, { projectId: project.id, title: 'Open' })
+    // Completed one minute apart, so "newest" is well defined.
+    for (let i = 0; i < BOARD_DONE_LIMIT + 10; i++) {
+      clock.current = new Date(clock.current.getTime() + 60_000)
+      await createTask(ctx, { projectId: project.id, title: `Done ${i}`, status: 'done' })
+    }
+    return env
+  }
+
+  it('shows only the newest done tasks on the board, and all of them on request', async () => {
+    const { ctx, project } = await setupHistory()
+
+    const board = await getProjectBoard(ctx, project.id)
+    const done = board.tasks.filter((t) => t.status === 'done')
+    expect(done).toHaveLength(BOARD_DONE_LIMIT)
+    expect(done.map((t) => t.title)).toContain(`Done ${BOARD_DONE_LIMIT + 9}`)
+    expect(done.map((t) => t.title)).not.toContain('Done 0')
+    expect(board.tasks.some((t) => t.title === 'Open')).toBe(true)
+    expect(board.hiddenDoneCount).toBe(10)
+
+    const all = await getProjectBoard(ctx, project.id, { allDone: true })
+    expect(all.tasks.filter((t) => t.status === 'done')).toHaveLength(BOARD_DONE_LIMIT + 10)
+    expect(all.hiddenDoneCount).toBe(0)
+  })
+
+  it('counts hidden done tasks in progress', async () => {
+    const { ctx, project } = await setupHistory()
+    const expected = { total: BOARD_DONE_LIMIT + 11, done: BOARD_DONE_LIMIT + 10 }
+    expect((await getProjectBoard(ctx, project.id)).project.progress).toMatchObject(expected)
+    expect((await listProjects(ctx))[0].progress).toMatchObject(expected)
+  })
+
+  it('reports a project without tasks as empty', async () => {
+    const { ctx } = await setup()
+    expect((await listProjects(ctx))[0].progress).toEqual({
+      total: 0,
+      done: 0,
+      percent: 0,
+      byStatus: { todo: 0, in_progress: 0, done: 0 },
+    })
+  })
+})
+
 describe('dashboard', () => {
   it('summarizes overdue, due soon and completed work', async () => {
     const { ctx, project } = await setup()
@@ -276,6 +325,18 @@ describe('dashboard', () => {
     expect(dashboard.dueSoon.map((t) => t.title)).toEqual(['Soon'])
     expect(dashboard.totals).toEqual({ openTasks: 2, doneThisWeek: 1, notes: 1 })
     expect(dashboard.projects[0].progress.percent).toBe(33)
+  })
+
+  it('counts only tasks completed in the last 7 days as done this week', async () => {
+    const { ctx, clock, project } = await setup()
+    await createTask(ctx, { projectId: project.id, title: 'Old', status: 'done' })
+    clock.current = new Date(clock.current.getTime() + 8 * 24 * 60 * 60 * 1000)
+    await createTask(ctx, { projectId: project.id, title: 'Recent', status: 'done' })
+    await createTask(ctx, { projectId: project.id, title: 'Open', status: 'in_progress' })
+
+    const dashboard = await getDashboard(ctx)
+    expect(dashboard.totals).toMatchObject({ openTasks: 1, doneThisWeek: 1 })
+    expect(dashboard.inProgress.map((t) => t.title)).toEqual(['Open'])
   })
 })
 

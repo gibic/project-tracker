@@ -8,6 +8,7 @@ import { createNote, deleteNote, getNote, listNotes, listTags, updateNote } from
 import {
   createProject,
   deleteProject,
+  BOARD_DONE_LIMIT,
   getProjectBoard,
   listProjects,
   setProjectArchived,
@@ -125,11 +126,14 @@ export const createMcpServer = (ctx: AppContext): McpServer => {
     'get_project',
     {
       title: 'Get project',
-      description: 'A project with its tasks (board order), its notes, and notes attached to each task.',
-      inputSchema: z.object({ projectId: id('Project') }),
+      description:
+        'A project with its tasks (board order), its notes, and notes attached to each task. ' +
+        `Open tasks are all included; done tasks only the newest ${BOARD_DONE_LIMIT} unless includeAllDone is true. ` +
+        'hiddenDoneCount is the number of done tasks left out.',
+      inputSchema: z.object({ projectId: id('Project'), includeAllDone: z.boolean().optional() }),
       annotations: READ,
     },
-    ({ projectId }) => run(() => getProjectBoard(ctx, projectId)),
+    ({ projectId, includeAllDone }) => run(() => getProjectBoard(ctx, projectId, { allDone: includeAllDone })),
   )
 
   server.registerTool(

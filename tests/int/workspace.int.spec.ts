@@ -82,6 +82,37 @@ describe('Payload repositories', () => {
     expect(board.project.progress).toMatchObject({ total: 3, done: 1 })
   })
 
+  it('counts tasks per status in SQL, scoped to the owner', async () => {
+    const project = await createProject(alice, { name: 'Counts' })
+    const other = await createProject(bob, { name: 'Other' })
+    await createTask(alice, { projectId: project.id, title: 'Open' })
+    await createTask(alice, { projectId: project.id, title: 'Done 1', status: 'done' })
+    await createTask(alice, { projectId: project.id, title: 'Done 2', status: 'done' })
+    await createTask(bob, { projectId: other.id, title: 'Not yours', status: 'done' })
+
+    expect(await alice.tasks.countByStatus([project.id, other.id])).toEqual({
+      [project.id]: { todo: 1, in_progress: 0, done: 2 },
+    })
+    expect(await alice.tasks.countCompletedSince([project.id], new Date(Date.now() - 60_000))).toBe(2)
+  })
+
+  it('lists task summaries without heavy fields and honours limit and completion order', async () => {
+    const project = await createProject(alice, { name: 'Summaries' })
+    await createTask(alice, { projectId: project.id, title: 'First', description: 'Long text', checklist: ['A'] })
+    const first = await createTask(alice, { projectId: project.id, title: 'Done first', status: 'done' })
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    const last = await createTask(alice, { projectId: project.id, title: 'Done last', status: 'done' })
+
+    const [summary] = await alice.tasks.listSummaries({ projectId: project.id, excludeStatus: 'done' })
+    expect(summary.title).toBe('First')
+    expect(summary).not.toHaveProperty('description')
+    expect(summary).not.toHaveProperty('checklist')
+
+    const newest = await alice.tasks.list({ projectId: project.id, status: 'done', completedOrder: 'newest', limit: 1 })
+    expect(newest.map((t) => t.id)).toEqual([last.id])
+    expect(first.id).not.toBe(last.id)
+  })
+
   it('stores an ordered checklist on the task', async () => {
     const project = await createProject(alice, { name: 'Checklist' })
     const task = await createTask(alice, { projectId: project.id, title: 'Release', checklist: ['Build', 'Test'] })
