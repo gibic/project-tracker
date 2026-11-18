@@ -1,6 +1,6 @@
 'use client'
 
-import { NotebookPenIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import { CopyPlusIcon, NotebookPenIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import Link from 'next/link'
 
 import type { NoteSummary } from '@/domain/notes/note'
@@ -31,7 +31,7 @@ export function TaskDialog({
   const task = useBoardStore((s) => s.tasks.find((t) => t.id === s.editingTaskId) ?? null)
   const projectId = useBoardStore((s) => s.projectId)
   const closeTask = useBoardStore((s) => s.closeTask)
-  const { update, remove, pending } = useTaskMutations()
+  const { update, duplicate, remove, pending } = useTaskMutations()
 
   const submit = (formData: FormData) => {
     if (!task) return
@@ -145,9 +145,15 @@ export function TaskDialog({
                 <Trash2Icon />
                 Delete
               </Button>
-              <Button type="submit" disabled={pending}>
-                Save
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" disabled={pending} onClick={() => duplicate(task.id)}>
+                  <CopyPlusIcon />
+                  Duplicate
+                </Button>
+                <Button type="submit" disabled={pending}>
+                  Save
+                </Button>
+              </div>
             </div>
           )}
         </form>

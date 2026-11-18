@@ -20,6 +20,7 @@ import {
   addChecklistItemAction,
   createTaskAction,
   deleteTaskAction,
+  duplicateTaskAction,
   moveChecklistItemAction,
   moveTaskAction,
   removeChecklistItemAction,
@@ -90,6 +91,16 @@ export function useTaskMutations() {
       if (!result.ok) return fail(result.error)
       store.getState().upsertTask(result.data)
       onDone?.()
+    })
+  }
+
+  /** Opens the copy once the server has created it. */
+  const duplicate = (id: ID) => {
+    startTransition(async () => {
+      const result = await duplicateTaskAction(id)
+      if (!result.ok) return fail(result.error)
+      store.getState().upsertTask(result.data)
+      store.getState().openTask(result.data.id)
     })
   }
 
@@ -171,5 +182,5 @@ export function useTaskMutations() {
       ),
   }
 
-  return { move, create, update, remove, checklist, pending }
+  return { move, create, update, duplicate, remove, checklist, pending }
 }

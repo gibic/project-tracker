@@ -166,6 +166,24 @@ export const createPayloadTaskRepository = (scope: RepositoryScope): TaskReposit
       return docs[0]?.position ?? null
     },
 
+    async nextPosition(projectId, status, after) {
+      const { docs } = await payload.find({
+        collection: 'tasks',
+        where: {
+          and: [
+            { project: { equals: toDbId(projectId) } },
+            { status: { equals: status } },
+            { position: { greater_than: after } },
+          ],
+        },
+        select: { position: true },
+        sort: 'position',
+        limit: 1,
+        ...asUser(scope),
+      })
+      return docs[0]?.position ?? null
+    },
+
     async create(data) {
       const doc = await payload.create({
         collection: 'tasks',

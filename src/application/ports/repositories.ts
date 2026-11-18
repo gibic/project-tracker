@@ -67,6 +67,8 @@ export interface TaskRepository {
   findById(id: ID): Promise<Task | null>
   /** Highest position in a project column, or null when the column is empty. */
   maxPosition(projectId: ID, status: TaskStatus): Promise<number | null>
+  /** Lowest position in a project column greater than `after`, or null when nothing is below it. */
+  nextPosition(projectId: ID, status: TaskStatus, after: number): Promise<number | null>
   create(data: NewTask): Promise<Task>
   update(id: ID, patch: Partial<Omit<NewTask, 'projectId'>>): Promise<Task>
   delete(id: ID): Promise<void>

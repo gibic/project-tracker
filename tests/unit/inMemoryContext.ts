@@ -98,6 +98,12 @@ export const createInMemoryContext = (now = new Date('2026-10-21T09:00:00.000Z')
         .map((t) => t.position)
       return positions.length ? Math.max(...positions) : null
     },
+    async nextPosition(projectId, status, after) {
+      const positions = [...tasks.values()]
+        .filter((t) => t.projectId === projectId && t.status === status && t.position > after)
+        .map((t) => t.position)
+      return positions.length ? Math.min(...positions) : null
+    },
     async create(data) {
       const task: Task = { ...data, id: nextId(), createdAt: stamp(), updatedAt: stamp() }
       tasks.set(task.id, task)

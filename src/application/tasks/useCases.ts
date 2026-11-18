@@ -152,6 +152,17 @@ export const moveTask = async (ctx: AppContext, input: MoveTaskInput): Promise<T
   return recurIfCompleted(ctx, task.status, moved)
 }
 
+/** Copies a task, checklist included (with fresh item ids), directly below the original in its column. */
+export const duplicateTask = async (ctx: AppContext, id: ID): Promise<Task> => {
+  const { id: _id, createdAt: _c, updatedAt: _u, ...task } = await requireEditableTask(ctx, id)
+  const next = await ctx.tasks.nextPosition(task.projectId, task.status, task.position)
+  return ctx.tasks.create({
+    ...task,
+    checklist: task.checklist.map((item) => ({ ...item, id: crypto.randomUUID() })),
+    position: positionBetween(task.position, next),
+  })
+}
+
 export const setTaskStatus = (ctx: AppContext, taskId: ID, status: TaskStatus): Promise<Task> =>
   moveTask(ctx, { taskId, status })
 

@@ -16,6 +16,7 @@ import {
   addChecklistItem,
   createTask,
   deleteTask,
+  duplicateTask,
   moveChecklistItem,
   moveTask,
   removeChecklistItem,
@@ -159,6 +160,29 @@ describe('tasks', () => {
 
     // Editing the task fields leaves the checklist alone.
     expect((await updateTask(ctx, task.id, { title: 'Release 1.0' })).checklist).toHaveLength(2)
+  })
+
+  it('duplicates a task directly below the original', async () => {
+    const { ctx, project } = await setup()
+    const a = await createTask(ctx, {
+      projectId: project.id,
+      title: 'A',
+      status: 'in_progress',
+      priority: 'high',
+      recurrence: 'weekly',
+      checklist: ['x'],
+    })
+    const b = await createTask(ctx, { projectId: project.id, title: 'B', status: 'in_progress' })
+    await updateChecklistItem(ctx, a.id, a.checklist[0].id, { done: true })
+
+    const copy = await duplicateTask(ctx, a.id)
+    expect(copy).toMatchObject({ title: 'A', status: 'in_progress', priority: 'high', recurrence: 'weekly' })
+    expect(copy.checklist).toMatchObject([{ text: 'x', done: true }])
+    expect(copy.checklist[0].id).not.toBe(a.checklist[0].id)
+    expect(copy.position).toBeGreaterThan(a.position)
+    expect(copy.position).toBeLessThan(b.position)
+    // Last in its column: goes to the bottom.
+    expect((await duplicateTask(ctx, b.id)).position).toBeGreaterThan(b.position)
   })
 
   it('accepts a client-chosen item id only when it is a UUID', async () => {

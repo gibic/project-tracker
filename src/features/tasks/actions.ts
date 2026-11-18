@@ -6,6 +6,7 @@ import {
   addChecklistItem,
   createTask,
   deleteTask,
+  duplicateTask,
   moveChecklistItem,
   moveTask,
   removeChecklistItem,
@@ -45,6 +46,12 @@ export async function moveTaskAction(input: MoveTaskInput) {
 
 export async function deleteTaskAction(id: string) {
   const result = await runAction((ctx) => deleteTask(ctx, id))
+  if (result.ok) refresh()
+  return result
+}
+
+export async function duplicateTaskAction(id: string) {
+  const result = await runAction((ctx) => duplicateTask(ctx, id))
   if (result.ok) refresh()
   return result
 }
