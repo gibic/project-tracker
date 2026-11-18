@@ -13,7 +13,13 @@ import {
   registerClient,
   validateAuthorizationRequest,
 } from '@/application/oauth/useCases'
-import { OAuthError, validateRedirectUri } from '@/domain/oauth/oauth'
+import {
+  CLIENT_REGISTRATION_WINDOW_MS,
+  CLIENT_REGISTRATIONS_PER_HOUR,
+  OAuthError,
+  validateRedirectUri,
+} from '@/domain/oauth/oauth'
+import { readClientCredentials } from '@/features/oauth/http'
 import { nodeOAuthCrypto } from '@/infrastructure/oauth/crypto'
 
 const createInMemoryOAuth = () => {
@@ -30,6 +36,9 @@ const createInMemoryOAuth = () => {
     },
     async findClient(clientId) {
       return [...clients.values()].find((c) => c.clientId === clientId) ?? null
+    },
+    async countClientsCreatedSince(since) {
+      return [...clients.values()].filter((c) => c.createdAt >= since).length
     },
     async createGrant(data) {
       const grant = { ...data, id: String(++seq) }
@@ -97,6 +106,15 @@ describe('oauth registration', () => {
     expect(confidential.token_endpoint_auth_method).toBe('client_secret_basic')
   })
 
+  it('caps registrations per hour', async () => {
+    const { ctx, advance } = createInMemoryOAuth()
+    const register = () => registerClient(ctx, { redirect_uris: [REDIRECT], token_endpoint_auth_method: 'none' })
+    for (let i = 0; i < CLIENT_REGISTRATIONS_PER_HOUR; i++) await register()
+    await expect(register()).rejects.toMatchObject({ code: 'temporarily_unavailable' })
+    advance(CLIENT_REGISTRATION_WINDOW_MS + 1)
+    await expect(register()).resolves.toMatchObject({ client_id: expect.stringMatching(/^ptc_/) })
+  })
+
   it('accepts https, loopback http and private-use schemes only', () => {
     expect(validateRedirectUri('https://chatgpt.com/connector_platform_oauth_redirect')).toBeTruthy()
     expect(validateRedirectUri('http://localhost:53682/callback')).toBeTruthy()
@@ -104,6 +122,18 @@ describe('oauth registration', () => {
     expect(() => validateRedirectUri('http://evil.example/cb')).toThrow(OAuthError)
     expect(() => validateRedirectUri('javascript:alert(1)')).toThrow(OAuthError)
     expect(() => validateRedirectUri('https://a.example/cb#frag')).toThrow(OAuthError)
+  })
+})
+
+describe('client credentials', () => {
+  const basic = (value: string) =>
+    new Request('https://app.example/oauth/token', {
+      headers: { Authorization: `Basic ${Buffer.from(value).toString('base64')}` },
+    })
+
+  it('decodes form-encoded Basic parts and keeps malformed ones as sent', () => {
+    expect(readClientCredentials(basic('ptc_a:p%2Bs'), {})).toEqual({ clientId: 'ptc_a', clientSecret: 'p+s' })
+    expect(readClientCredentials(basic('ptc_a:100%'), {})).toEqual({ clientId: 'ptc_a', clientSecret: '100%' })
   })
 })
 

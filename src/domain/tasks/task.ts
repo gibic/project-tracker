@@ -1,6 +1,7 @@
 import type { ID } from '../shared/types'
 import type { ChecklistItem } from './checklist'
 
+import { addDays, dayIn } from '../shared/calendar'
 import { ValidationError } from '../shared/errors'
 import { oneOf, optionalText, requireText } from '../shared/validation'
 import { parseRecurrence, type TaskRecurrence } from './recurrence'
@@ -86,22 +87,27 @@ export const applyStatusChange = (
   return { status, completedAt: status === 'done' ? now : null }
 }
 
-const startOfDay = (date: Date): Date => {
-  const copy = new Date(date)
-  copy.setHours(0, 0, 0, 0)
-  return copy
-}
+/** Due dates are shown as their UTC calendar day (`formatDueDate`), so that is the day they count as. */
+const dueDay = (date: Date): string => date.toISOString().slice(0, 10)
+
+/*
+ * "Today" is the calendar day in `timeZone`. Server and browser must pass the same zone
+ * (`APP_TIME_ZONE`), or the dashboard and the board disagree for part of every day.
+ */
 
 /** A task is overdue when it is open and its due day is before today. */
-export const isOverdue = (task: Pick<Task, 'status' | 'dueDate'>, now: Date): boolean =>
-  task.status !== 'done' && task.dueDate !== null && task.dueDate < startOfDay(now)
+export const isOverdue = (task: Pick<Task, 'status' | 'dueDate'>, now: Date, timeZone?: string): boolean =>
+  task.status !== 'done' && task.dueDate !== null && dueDay(task.dueDate) < dayIn(now, timeZone)
 
 /** Open, not overdue, and due within the next `days` days (today included). */
-export const isDueSoon = (task: Pick<Task, 'status' | 'dueDate'>, now: Date, days = 7): boolean => {
-  if (task.status === 'done' || task.dueDate === null || isOverdue(task, now)) return false
-  const limit = startOfDay(now)
-  limit.setDate(limit.getDate() + days + 1)
-  return task.dueDate < limit
+export const isDueSoon = (
+  task: Pick<Task, 'status' | 'dueDate'>,
+  now: Date,
+  timeZone?: string,
+  days = 7,
+): boolean => {
+  if (task.status === 'done' || task.dueDate === null || isOverdue(task, now, timeZone)) return false
+  return dueDay(task.dueDate) <= addDays(dayIn(now, timeZone), days)
 }
 
 /** Most urgent first: higher priority, then earlier due date, then board order. */

@@ -49,7 +49,8 @@ export const protectedResourceMetadata = (origin: string) => ({
 /** Turns OAuth errors into RFC 6749 error responses; anything else is a logged server_error. */
 export const oauthErrorResponse = (error: unknown): Response => {
   if (isOAuthError(error)) {
-    return json({ error: error.code, error_description: error.message }, error.code === 'invalid_client' ? 401 : 400)
+    const status = error.code === 'invalid_client' ? 401 : error.code === 'temporarily_unavailable' ? 429 : 400
+    return json({ error: error.code, error_description: error.message }, status)
   }
   console.error('[oauth]', error)
   return json({ error: 'server_error', error_description: 'Unexpected server error' }, 500)
@@ -73,7 +74,13 @@ export const readClientCredentials = (request: Request, params: OAuthParams): Cl
   if (match) {
     const decoded = Buffer.from(match[1], 'base64').toString('utf8')
     const separator = decoded.indexOf(':')
-    const part = (value: string) => decodeURIComponent(value.replace(/\+/g, ' '))
+    const part = (value: string) => {
+      try {
+        return decodeURIComponent(value.replace(/\+/g, ' '))
+      } catch {
+        return value // not form-encoded (a stray `%`): use as sent, so a bad secret gets 401, not 500
+      }
+    }
     if (separator > 0) {
       return { clientId: part(decoded.slice(0, separator)), clientSecret: part(decoded.slice(separator + 1)) }
     }

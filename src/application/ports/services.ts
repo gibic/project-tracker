@@ -5,6 +5,8 @@ export interface RichTextRenderer {
 
 export interface Clock {
   now(): Date
+  /** IANA zone whose calendar day is "today" for due dates; the runtime's zone when undefined. */
+  timeZone?: string
 }
 
 export const systemClock: Clock = { now: () => new Date() }

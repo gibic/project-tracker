@@ -114,6 +114,12 @@ export const createInMemoryContext = (now = new Date('2026-10-21T09:00:00.000Z')
       tasks.set(id, task)
       return task
     },
+    async claimRecurrence(id) {
+      const task = tasks.get(id)
+      if (!task?.recurrence) return false
+      tasks.set(id, { ...task, recurrence: null, updatedAt: stamp() })
+      return true
+    },
     async delete(id) {
       tasks.delete(id)
     },
@@ -139,6 +145,9 @@ export const createInMemoryContext = (now = new Date('2026-10-21T09:00:00.000Z')
         .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
         .slice(0, filter.limit ?? Infinity)
         .map(summary)
+    },
+    async count() {
+      return notes.size
     },
     async findById(id) {
       return notes.get(id) ?? null

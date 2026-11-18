@@ -8,4 +8,10 @@ export const ownedByUser: Access = ({ req: { user } }) => {
   return { owner: { equals: user.id } }
 }
 
+/** A user only sees and changes their own account. */
+export const selfOnly: Access = ({ req: { user } }) => {
+  if (!user) return false
+  return { id: { equals: user.id } }
+}
+
 export const never: FieldAccess = () => false

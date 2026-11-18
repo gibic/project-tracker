@@ -89,6 +89,11 @@ export const createPayloadNoteRepository = (scope: RepositoryScope): NoteReposit
       return docs.map((doc) => toSummary(doc as NoteDoc))
     },
 
+    async count() {
+      const { totalDocs } = await payload.count({ collection: 'notes', user: scope.user, overrideAccess: false })
+      return totalDocs
+    },
+
     async findById(id) {
       try {
         const doc = await payload.findByID({ collection: 'notes', id: toDbId(id), ...asUser(scope) })

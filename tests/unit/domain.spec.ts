@@ -94,6 +94,18 @@ describe('tasks', () => {
     expect(isDueSoon(task({ dueDate: yesterday }), now)).toBe(false)
   })
 
+  it('uses the calendar day of the given time zone as today', () => {
+    // 23:00 UTC on Oct 21 is already Oct 22 in Jakarta (UTC+7) but still Oct 21 in New York.
+    const lateEvening = new Date('2026-10-21T23:00:00.000Z')
+    const due = (iso: string) => task({ dueDate: new Date(`${iso}T12:00:00.000Z`) })
+    expect(isOverdue(due('2026-10-21'), lateEvening, 'UTC')).toBe(false)
+    expect(isOverdue(due('2026-10-21'), lateEvening, 'Asia/Jakarta')).toBe(true)
+    expect(isOverdue(due('2026-10-20'), lateEvening, 'America/New_York')).toBe(true)
+    expect(isOverdue(due('2026-10-21'), lateEvening, 'America/New_York')).toBe(false)
+    expect(isDueSoon(due('2026-10-29'), lateEvening, 'Asia/Jakarta')).toBe(true)
+    expect(isDueSoon(due('2026-10-29'), lateEvening, 'UTC')).toBe(false)
+  })
+
   it('sorts by priority, then due date', () => {
     const sorted = [
       task({ id: 'low', priority: 'low' }),
@@ -134,6 +146,12 @@ describe('recurrence', () => {
   it('counts from today without a due date', () => {
     expect(next('daily', null, now)).toBe('2026-10-22')
     expect(next('weekly', null, now)).toBe('2026-10-28')
+  })
+
+  it('takes today from the given time zone', () => {
+    const lateEvening = new Date('2026-10-21T23:00:00.000Z')
+    expect(next('daily', null, lateEvening, 'UTC')).toBe('2026-10-22')
+    expect(next('daily', null, lateEvening, 'Asia/Jakarta')).toBe('2026-10-23')
   })
 
   it('skips occurrences that are today or past when completed late', () => {

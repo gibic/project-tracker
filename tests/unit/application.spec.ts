@@ -124,6 +124,18 @@ describe('tasks', () => {
     expect(tasks).toHaveLength(2)
   })
 
+  it('creates one next occurrence when the same task is completed twice at once', async () => {
+    const { ctx, project } = await setup()
+    const task = await createTask(ctx, { projectId: project.id, title: 'Daily', recurrence: 'daily' })
+    // Board drag and an agent completing the task in parallel: both read it as todo.
+    await Promise.all([
+      moveTask(ctx, { taskId: task.id, status: 'done' }),
+      moveTask(ctx, { taskId: task.id, status: 'done' }),
+    ])
+    const { tasks } = await getProjectBoard(ctx, project.id)
+    expect(tasks.filter((t) => t.status === 'todo')).toHaveLength(1)
+  })
+
   it('does not repeat one-off tasks or moves within done', async () => {
     const { ctx, project } = await setup()
     const once = await createTask(ctx, { projectId: project.id, title: 'Once' })
@@ -183,6 +195,26 @@ describe('tasks', () => {
     expect(copy.position).toBeLessThan(b.position)
     // Last in its column: goes to the bottom.
     expect((await duplicateTask(ctx, b.id)).position).toBeGreaterThan(b.position)
+  })
+
+  it('renumbers the column when positions between two tasks run out', async () => {
+    const { ctx, project } = await setup()
+    const a = await createTask(ctx, { projectId: project.id, title: 'A' })
+    const b = await createTask(ctx, { projectId: project.id, title: 'B' })
+    // Each copy lands directly below A, halving the same gap every time.
+    for (let i = 0; i < 60; i++) await duplicateTask(ctx, a.id)
+    // Dropping a task between A and the copy right below it halves it once more.
+    const column = async () => (await getProjectBoard(ctx, project.id)).tasks
+    const [, firstCopy] = await column()
+    const c = await createTask(ctx, { projectId: project.id, title: 'C' })
+    await moveTask(ctx, { taskId: c.id, status: 'todo', beforeId: a.id, afterId: firstCopy.id })
+
+    const tasks = await column()
+    const positions = tasks.map((t) => t.position)
+    expect(new Set(positions).size).toBe(positions.length)
+    expect(positions).toEqual([...positions].sort((x, y) => x - y))
+    expect(tasks.map((t) => t.id).slice(0, 3)).toEqual([a.id, c.id, firstCopy.id])
+    expect(tasks.at(-1)?.id).toBe(b.id)
   })
 
   it('accepts a client-chosen item id only when it is a UUID', async () => {

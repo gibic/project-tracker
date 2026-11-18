@@ -66,6 +66,37 @@ describe('Payload repositories', () => {
     expect(stored.owner).toBe(users[0].id)
   })
 
+  it('lets a user see and change only their own account', async () => {
+    const [aliceUser, bobUser] = users
+    const asBob = { user: bobUser, overrideAccess: false } as const
+
+    const { docs } = await payload.find({ collection: 'users', ...asBob })
+    expect(docs.map((u) => u.id)).toEqual([bobUser.id])
+    await expect(
+      payload.update({ collection: 'users', id: aliceUser.id, data: { password: 'taken-over' }, ...asBob }),
+    ).rejects.toThrow()
+    await expect(payload.delete({ collection: 'users', id: aliceUser.id, ...asBob })).rejects.toThrow()
+    await expect(
+      payload.create({ collection: 'users', data: { email: `eve-${suffix}@example.test`, password: 'x' }, ...asBob }),
+    ).rejects.toThrow()
+    await expect(payload.update({ collection: 'users', id: bobUser.id, data: { name: 'Bob' }, ...asBob })).resolves.toMatchObject({ name: 'Bob' })
+  })
+
+  it('creates one next occurrence when a repeating task is completed twice at once', async () => {
+    const project = await createProject(alice, { name: 'Routines' })
+    const task = await createTask(alice, { projectId: project.id, title: 'Daily', recurrence: 'daily' })
+    // Bob cannot claim Alice's recurrence through the raw SQL path.
+    expect(await bob.tasks.claimRecurrence(task.id)).toBe(false)
+
+    await Promise.all([
+      moveTask(alice, { taskId: task.id, status: 'done' }),
+      moveTask(alice, { taskId: task.id, status: 'done' }),
+    ])
+    const { tasks } = await getProjectBoard(alice, project.id)
+    expect(tasks.filter((t) => t.status === 'todo').map((t) => t.recurrence)).toEqual(['daily'])
+    expect(tasks.find((t) => t.id === task.id)?.recurrence).toBeNull()
+  })
+
   it('orders tasks and records completion', async () => {
     const project = await createProject(alice, { name: 'Board' })
     const a = await createTask(alice, { projectId: project.id, title: 'A' })

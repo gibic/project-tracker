@@ -71,6 +71,11 @@ export interface TaskRepository {
   nextPosition(projectId: ID, status: TaskStatus, after: number): Promise<number | null>
   create(data: NewTask): Promise<Task>
   update(id: ID, patch: Partial<Omit<NewTask, 'projectId'>>): Promise<Task>
+  /**
+   * Atomically clears the task's recurrence. True only for the one caller that cleared it,
+   * so concurrent completions create a single next occurrence.
+   */
+  claimRecurrence(id: ID): Promise<boolean>
   delete(id: ID): Promise<void>
   deleteByProject(projectId: ID): Promise<void>
 }
@@ -98,6 +103,7 @@ export interface NoteFilter {
 
 export interface NoteRepository {
   list(filter?: NoteFilter): Promise<NoteSummary[]>
+  count(): Promise<number>
   findById(id: ID): Promise<Note | null>
   /** Exact lookup by `titleKey`, used to resolve `[[wiki links]]` and enforce unique titles. */
   findByTitleKeys(keys: string[]): Promise<NoteSummary[]>
@@ -144,6 +150,7 @@ export type NewOAuthGrant = Omit<OAuthGrant, 'id'>
 export interface OAuthRepository {
   createClient(data: NewOAuthClient): Promise<OAuthClient>
   findClient(clientId: string): Promise<OAuthClient | null>
+  countClientsCreatedSince(since: Date): Promise<number>
   createGrant(data: NewOAuthGrant): Promise<OAuthGrant>
   findGrant(by: { codeHash: string } | { accessTokenHash: string } | { refreshTokenHash: string }): Promise<OAuthGrant | null>
   updateGrant(id: ID, patch: Partial<NewOAuthGrant>): Promise<OAuthGrant>

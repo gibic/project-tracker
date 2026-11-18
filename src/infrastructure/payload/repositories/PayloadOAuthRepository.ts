@@ -67,6 +67,15 @@ export const createPayloadOAuthRepository = (payload: Payload): OAuthRepository 
     return docs[0] ? toClient(docs[0]) : null
   },
 
+  async countClientsCreatedSince(since) {
+    const { totalDocs } = await payload.count({
+      collection: 'oauth-clients',
+      where: { createdAt: { greater_than_equal: since.toISOString() } },
+      overrideAccess: true,
+    })
+    return totalDocs
+  },
+
   async createGrant(data) {
     const doc = await payload.create({
       collection: 'oauth-grants',

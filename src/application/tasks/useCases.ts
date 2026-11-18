@@ -21,6 +21,7 @@ import { nextDueDate } from '@/domain/tasks/recurrence'
 import {
   applyStatusChange,
   parseTaskStatus,
+  POSITION_STEP,
   positionBetween,
   validateTaskInput,
 } from '@/domain/tasks/task'
@@ -47,21 +48,29 @@ const requireEditableTask = async (ctx: AppContext, id: ID): Promise<Task> => {
  */
 const recurIfCompleted = async (ctx: AppContext, previous: TaskStatus, task: Task): Promise<Task> => {
   if (previous === 'done' || task.status !== 'done' || !task.recurrence) return task
+  // Another request completing the same task got here first and creates the occurrence.
+  if (!(await ctx.tasks.claimRecurrence(task.id))) return requireTask(ctx, task.id)
 
-  const max = await ctx.tasks.maxPosition(task.projectId, 'todo')
-  await ctx.tasks.create({
-    projectId: task.projectId,
-    title: task.title,
-    description: task.description,
-    priority: task.priority,
-    recurrence: task.recurrence,
-    checklist: resetChecklist(task.checklist, newIds(task.checklist.length)),
-    dueDate: nextDueDate(task.recurrence, task.dueDate, ctx.clock.now()),
-    status: 'todo',
-    completedAt: null,
-    position: positionBetween(max, null),
-  })
-  return ctx.tasks.update(task.id, { recurrence: null })
+  try {
+    const max = await ctx.tasks.maxPosition(task.projectId, 'todo')
+    await ctx.tasks.create({
+      projectId: task.projectId,
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      recurrence: task.recurrence,
+      checklist: resetChecklist(task.checklist, newIds(task.checklist.length)),
+      dueDate: nextDueDate(task.recurrence, task.dueDate, ctx.clock.now(), ctx.clock.timeZone),
+      status: 'todo',
+      completedAt: null,
+      position: positionBetween(max, null),
+    })
+  } catch (error) {
+    // Give the recurrence back so the series is not lost.
+    await ctx.tasks.update(task.id, { recurrence: task.recurrence })
+    throw error
+  }
+  return requireTask(ctx, task.id)
 }
 
 export type CreateTaskInput = Partial<Record<keyof TaskInput, unknown>> & {
@@ -112,6 +121,35 @@ export const updateTask = async (
   return recurIfCompleted(ctx, task.status, updated)
 }
 
+/**
+ * Position between two neighbours in a column. Halving the same gap ~50 times runs out of
+ * float precision; then the column is renumbered in order with a free slot right below
+ * `before` (or right above `after` when there is no `before`), like checklist `renumber`.
+ */
+const slotBetween = async (
+  ctx: AppContext,
+  projectId: ID,
+  status: TaskStatus,
+  movingId: ID | null,
+  before: { id: ID; position: number } | null,
+  after: { id?: ID; position: number } | null,
+): Promise<number> => {
+  const position = positionBetween(before?.position, after?.position)
+  if ((!before || position > before.position) && (!after || position < after.position)) return position
+
+  const column = (await ctx.tasks.listSummaries({ projectId, status })).filter((t) => t.id !== movingId)
+  const index = Math.max(
+    0,
+    before ? column.findIndex((t) => t.id === before.id) + 1 : column.findIndex((t) => t.id === after?.id),
+  )
+  // Sequential on purpose: this is rare, and it leaves the small DB pool to other requests.
+  for (const [i, other] of column.entries()) {
+    const renumbered = (i < index ? i + 1 : i + 2) * POSITION_STEP
+    if (other.position !== renumbered) await ctx.tasks.update(other.id, { position: renumbered })
+  }
+  return (index + 1) * POSITION_STEP
+}
+
 export interface MoveTaskInput {
   taskId: ID
   status: unknown
@@ -140,7 +178,7 @@ export const moveTask = async (ctx: AppContext, input: MoveTaskInput): Promise<T
 
   let position: number
   if (before || after) {
-    position = positionBetween(before?.position, after?.position)
+    position = await slotBetween(ctx, task.projectId, status, task.id, before, after)
   } else {
     // No neighbours (empty drop area, list-view checkbox, agents): append to the end of the column.
     // One indexed lookup instead of loading the column, which for `done` holds all history.
@@ -154,17 +192,22 @@ export const moveTask = async (ctx: AppContext, input: MoveTaskInput): Promise<T
 
 /** Copies a task, checklist included (with fresh item ids), directly below the original in its column. */
 export const duplicateTask = async (ctx: AppContext, id: ID): Promise<Task> => {
-  const { id: _id, createdAt: _c, updatedAt: _u, ...task } = await requireEditableTask(ctx, id)
+  const { createdAt: _c, updatedAt: _u, ...original } = await requireEditableTask(ctx, id)
+  const { id: _id, ...task } = original
   const next = await ctx.tasks.nextPosition(task.projectId, task.status, task.position)
   return ctx.tasks.create({
     ...task,
     checklist: task.checklist.map((item) => ({ ...item, id: crypto.randomUUID() })),
-    position: positionBetween(task.position, next),
+    position: await slotBetween(
+      ctx,
+      task.projectId,
+      task.status,
+      null,
+      original,
+      next === null ? null : { position: next },
+    ),
   })
 }
-
-export const setTaskStatus = (ctx: AppContext, taskId: ID, status: TaskStatus): Promise<Task> =>
-  moveTask(ctx, { taskId, status })
 
 export const deleteTask = async (ctx: AppContext, id: ID): Promise<void> => {
   await requireEditableTask(ctx, id)

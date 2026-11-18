@@ -5,6 +5,8 @@ import type { ID } from '@/domain/shared/types'
 import {
   ACCESS_TOKEN_TTL_MS,
   AUTHORIZATION_CODE_TTL_MS,
+  CLIENT_REGISTRATION_WINDOW_MS,
+  CLIENT_REGISTRATIONS_PER_HOUR,
   isAccessToken,
   isExpired,
   isValidPkceValue,
@@ -34,6 +36,10 @@ export interface ClientRegistrationResponse {
 
 export const registerClient = async (ctx: OAuthContext, metadata: unknown): Promise<ClientRegistrationResponse> => {
   const registration = validateClientRegistration(metadata)
+  const windowStart = new Date(ctx.clock.now().getTime() - CLIENT_REGISTRATION_WINDOW_MS)
+  if ((await ctx.oauth.countClientsCreatedSince(windowStart)) >= CLIENT_REGISTRATIONS_PER_HOUR) {
+    throw new OAuthError('temporarily_unavailable', 'Too many app registrations. Try again in an hour.')
+  }
   const secret = registration.tokenEndpointAuthMethod === 'none' ? null : ctx.crypto.randomToken(TOKEN_PREFIX.clientSecret)
   const client = await ctx.oauth.createClient({
     ...registration,

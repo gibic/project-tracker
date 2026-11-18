@@ -6,12 +6,13 @@ import type { Task } from '@/domain/tasks/task'
 
 import { TASK_RECURRENCE_LABELS } from '@/domain/tasks/recurrence'
 import { isOverdue } from '@/domain/tasks/task'
+import { APP_TIME_ZONE } from '@/utilities/timeZone'
 import { cn } from '@/utilities/ui'
 import { formatDueDate } from '../../shared/format'
 import { PriorityBadge } from './PriorityBadge'
 
 export function TaskMeta({ task, noteCount = 0 }: { task: Task; noteCount?: number }) {
-  const overdue = isOverdue(task, new Date())
+  const overdue = isOverdue(task, new Date(), APP_TIME_ZONE)
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <PriorityBadge priority={task.priority} />

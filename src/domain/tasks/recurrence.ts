@@ -1,3 +1,4 @@
+import { dayIn } from '../shared/calendar'
 import { oneOf } from '../shared/validation'
 
 export const TASK_RECURRENCES = ['daily', 'weekdays', 'weekly', 'monthly', 'yearly'] as const
@@ -18,10 +19,6 @@ export const parseRecurrence = (value: unknown): TaskRecurrence | null => {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-
-/** Calendar day of `date` in local time, pinned to 12:00 UTC like date-only due dates. */
-const calendarDay = (date: Date): Date =>
-  new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12))
 
 /** Adds whole months, clamping to the last day of a shorter month (Jan 31 + 1 month = Feb 28). */
 const addMonths = (date: Date, months: number): Date => {
@@ -53,8 +50,14 @@ const isWeekend = (date: Date): boolean => date.getUTCDay() === 0 || date.getUTC
  * occurrences that are today or in the past, so a late completion schedules
  * the next one in the future instead of creating an overdue task.
  */
-export const nextDueDate = (recurrence: TaskRecurrence, dueDate: Date | null, now: Date): Date => {
-  const today = calendarDay(now)
+export const nextDueDate = (
+  recurrence: TaskRecurrence,
+  dueDate: Date | null,
+  now: Date,
+  timeZone?: string,
+): Date => {
+  // Today in `timeZone`, pinned to 12:00 UTC like date-only due dates.
+  const today = new Date(`${dayIn(now, timeZone)}T12:00:00.000Z`)
   // Stored due dates are pinned to 12:00 UTC, so their calendar day is read in UTC.
   const base = dueDate
     ? new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), dueDate.getUTCDate(), 12))

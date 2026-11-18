@@ -1,15 +1,16 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../access'
+import { authenticated, selfOnly } from '../access'
 
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
     admin: authenticated,
-    create: authenticated,
-    delete: authenticated,
-    read: authenticated,
-    update: authenticated,
+    // The first user signs up through /admin/create-first-user, which skips access control.
+    create: () => false,
+    delete: selfOnly,
+    read: selfOnly,
+    update: selfOnly,
   },
   admin: {
     defaultColumns: ['name', 'email'],

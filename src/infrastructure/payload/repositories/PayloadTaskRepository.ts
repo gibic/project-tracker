@@ -201,6 +201,18 @@ export const createPayloadTaskRepository = (scope: RepositoryScope): TaskReposit
       return toTask(doc)
     },
 
+    // Raw SQL because Payload's update-by-where reads then writes, which two requests can both pass.
+    // Raw SQL skips access control, so it filters on `owner_id` itself (like `countByStatus`).
+    async claimRecurrence(id) {
+      const db = (payload.db as unknown as PostgresAdapter).drizzle
+      const { rows } = await db.execute(sql`
+        UPDATE tasks SET recurrence = NULL, updated_at = now()
+        WHERE id = ${toDbId(id)} AND owner_id = ${scope.user.id} AND recurrence IS NOT NULL
+        RETURNING id
+      `)
+      return rows.length > 0
+    },
+
     async delete(id) {
       await payload.delete({ collection: 'tasks', id: toDbId(id), ...asUser(scope) })
     },

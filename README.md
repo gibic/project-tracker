@@ -40,7 +40,7 @@ To run the app in Docker as well, use `docker-compose up` instead. The app conta
 | `POSTGRES_PASSWORD` | Password for the docker-compose Postgres service; must match `DATABASE_URL` |
 | `PAYLOAD_SECRET` | Secret used to sign auth tokens |
 | `NEXT_PUBLIC_SERVER_URL` | Public URL of the app, without a trailing slash |
-| `CRON_SECRET` | Bearer token for running Payload jobs from a cron service |
+| `NEXT_PUBLIC_TIME_ZONE` | Your IANA time zone (e.g. `Asia/Jakarta`); decides which day is "today" for overdue, due soon and repeating tasks. Unset: the runtime's zone (UTC on Vercel). Read at build time |
 
 ## Architecture
 

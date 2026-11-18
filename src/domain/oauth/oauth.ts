@@ -16,6 +16,7 @@ export type OAuthErrorCode =
   | 'invalid_redirect_uri'
   | 'invalid_client_metadata'
   | 'access_denied'
+  | 'temporarily_unavailable'
 
 /** An error with an RFC 6749 / RFC 7591 error code, returned to the client as-is. */
 export class OAuthError extends Error {
@@ -34,6 +35,14 @@ export const OAUTH_SCOPE = 'mcp'
 export const AUTHORIZATION_CODE_TTL_MS = 10 * 60 * 1000
 export const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000
 export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * Registration is open to anyone, so this caps how many clients the whole app accepts per hour.
+ * shortcut: global, not per IP, so a flood also blocks real sign-ups for up to an hour; add a
+ * per-IP rate limit (e.g. Vercel Firewall) if that ever happens.
+ */
+export const CLIENT_REGISTRATIONS_PER_HOUR = 20
+export const CLIENT_REGISTRATION_WINDOW_MS = 60 * 60 * 1000
 
 /** Prefixes make token types recognizable (and distinguish access tokens from Payload API keys). */
 export const TOKEN_PREFIX = {

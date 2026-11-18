@@ -25,7 +25,11 @@ export const getDashboard = async (ctx: AppContext): Promise<Dashboard> => {
   const now = ctx.clock.now()
   const weekAgo = new Date(now.getTime() - 7 * DAY_MS)
 
-  const [projects, notes] = await Promise.all([listProjects(ctx), ctx.notes.list()])
+  const [projects, recentNotes, noteCount] = await Promise.all([
+    listProjects(ctx),
+    ctx.notes.list({ limit: 6 }), // newest first
+    ctx.notes.count(),
+  ])
   const projectIds = projects.map((p) => p.id)
   // Open tasks only: every list below excludes done tasks, and done counts come from aggregates.
   const [open, doneThisWeek] = projectIds.length
@@ -40,18 +44,18 @@ export const getDashboard = async (ctx: AppContext): Promise<Dashboard> => {
 
   return {
     projects,
-    overdue: open.filter((t) => isOverdue(t, now)).sort(compareByUrgency).map(withProject),
-    dueSoon: open.filter((t) => isDueSoon(t, now)).sort(compareByUrgency).map(withProject),
+    overdue: open.filter((t) => isOverdue(t, now, ctx.clock.timeZone)).sort(compareByUrgency).map(withProject),
+    dueSoon: open.filter((t) => isDueSoon(t, now, ctx.clock.timeZone)).sort(compareByUrgency).map(withProject),
     inProgress: open
       .filter((t) => t.status === 'in_progress')
       .sort(compareByUrgency)
       .slice(0, 10)
       .map(withProject),
-    recentNotes: [...notes].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 6),
+    recentNotes,
     totals: {
       openTasks: open.length,
       doneThisWeek,
-      notes: notes.length,
+      notes: noteCount,
     },
   }
 }
